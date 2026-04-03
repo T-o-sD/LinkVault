@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ── Content Security Policy ───────────────────────────────────────────
+         • script-src 'unsafe-inline'  : required for inline <script> block
+         • style-src  'unsafe-inline'  : required for inline <style> block
+         • img-src https: data: blob:  : Google S2 favicons + data/blob URIs
+         • connect-src 'self'          : IndexedDB is local — no XHR/fetch
+         • object-src / form-action    : locked down to prevent plugin/form abuse
+    ──────────────────────────────────────────────────────────────────────── -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https: data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none';">
+    <title>LinkVault - Share &amp; Discover Links</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface2: #18181f;
+            --surface3: #202028;
+            --border: #2a2a38;
+            --border2: #353545;
+            --accent: #00e5ff;
+            --accent2: #7c5cff;
+            --accent3: #ff4f7b;
+            --text: #e8e8f0;
+            --text2: #9090a8;
+            --text3: #5a5a72;
+            --success: #00e096;
+            --warning: #ffb547;
+            --danger: #ff4f7b;
+            --card-glow: 0 0 0 1px var(--border), 0 4px 32px rgba(0, 0, 0, .5);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --trans: all .2s ease
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit
+        }
+
+        input,
+        textarea,
+        select {
+            font-family: inherit
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg)
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 99px
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: .18;
+            pointer-events: none;
+            z-index: 0
+        }
+
+        .app-wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 64px;
+            background: rgba(10, 10, 15, .85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -.5px
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center
+        }
+
+        .stat-pill {
+            font-family: 'Space Mono', monospace;
+            font-size: .72rem;
+            color: var(--text3);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 99px;
+            white-space: nowrap
+        }
+
+        .stat-pill span {
+            color: var(--accent)
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 0
+        }
+
+        aside {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: sticky;
+            top: 64px;
+            height: calc(100vh - 64px);
+            overflow-y: auto
+        }
+
+        .sidebar-title {
+            font-family: 'Space Mono', monospace;
+            font-size: .65rem;
+            letter-spacing: 2px;
+            color: var(--text3);
+            text-transform: uppercase;
+            padding: 4px 8px 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 4px
+        }
+
+        .cat-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            font-size: .88rem;
+            font-weight: 500;
+            color: var(--text2);
+            transition: var(--trans);
+            border: 1px solid transparent;
+            gap: 8px;
+            width: 100%
+        }
+
+        .cat-btn:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--border)
+        }
+
+        .cat-btn.active {
+            background: rgba(0, 229, 255, .08);
+            color: var(--accent);
+            border-color: rgba(0, 229, 255, .25)
+        }
+
+        .cat-btn .cat-left {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .cat-icon {
+            font-size: 1rem;
+            width: 22px;
+            text-align: center
+        }
+
+        .cat-count {
+            font-family: 'Space Mono', monospace;
+            font-size: .68rem;
+            background: var(--surface3);
+            color: var(--text3);
+            padding: 2px 7px;
+            border-radius: 99px;
+            min-width: 22px;
+            text-align: center
+        }
+
+        .cat-btn.active .cat-count {
+            background: rgba(0, 229, 255, .15);
+            color: var(--accent)
+        }
+
+        .cat-delete-btn {
+            opacity: 0;
+            font-size: .7rem;
+            color: var(--danger);
+            transition: var(--trans);
+            padding: 2px 5px;
+            border-radius: 4px
+        }
+
+        .cat-btn:hover .cat-delete-btn {
+            opacity: 1
+        }
+
+        .cat-delete-btn:hover {
+            background: rgba(255, 79, 123, .15)
+        }
+
+        .sidebar-add-cat {
+            margin-top: 4px
+        }
+
+        .add-cat-form {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px
+        }
+
+        .add-cat-input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 10px;
+            border-radius: var(--radius-sm);
+            font-size: .82rem;
+            outline: none;
+            transition: var(--trans)
+        }
+
+        .add-cat-input:focus {
+            border-color: var(--accent)
+        }
+
+        .add-cat-btn {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            padding: 7px 12px;
+            border-radius: var(--radius-sm);
+            font-size: .82rem;
+            transition: var(--trans)
+        }
+
+        .add-cat-btn:hover {
+            background: #33eeff
+        }
+
+        .sidebar-section-divider {
+            font-family: 'Space Mono', monospace;
+            font-size: .62rem;
+            letter-spacing: 1.5px;
+            color: var(--text3);
+            text-transform: uppercase;
+            padding: 10px 8px 4px;
+            border-top: 1px solid var(--border);
+            margin-top: 4px
+        }
+
+        .content {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto
+        }
+
+        .add-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--card-glow);
+            position: relative;
+            overflow: hidden
+        }
+
+        .add-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent3))
+        }
+
+        .add-card-title {
+            font-family: 'Space Mono', monospace;
+            font-size: .85rem;
+            color: var(--text2);
+            margin-bottom: 20px;
+            letter-spacing: .5px
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px
+        }
+
+        .form-group.full {
+            grid-column: 1/-1
+        }
+
+        label {
+            font-size: .75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text3);
+            text-transform: uppercase
+        }
+
+        .input-wrap {
+            position: relative
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: .95rem;
+            color: var(--text3);
+            pointer-events: none
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 11px 14px 11px 38px;
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            outline: none;
+            transition: var(--trans)
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            background: var(--surface3);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, .08)
+        }
+
+        .form-input::placeholder {
+            color: var(--text3)
+        }
+
+        .form-select {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 11px 14px 11px 38px;
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            outline: none;
+            transition: var(--trans);
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%235a5a72' d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px
+        }
+
+        .form-select:focus {
+            border-color: var(--accent);
+            background-color: var(--surface3);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, .08)
+        }
+
+        .form-select option {
+            background: var(--surface2)
+        }
+
+        .submit-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            color: #fff;
+            font-weight: 700;
+            font-size: .95rem;
+            border-radius: var(--radius-sm);
+            transition: var(--trans);
+            box-shadow: 0 4px 20px rgba(0, 229, 255, .2)
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 28px rgba(0, 229, 255, .35)
+        }
+
+        .submit-btn:active {
+            transform: translateY(0)
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 200px
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text3);
+            font-size: .9rem
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px 10px 38px;
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            outline: none;
+            transition: var(--trans)
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, .08)
+        }
+
+        .search-input::placeholder {
+            color: var(--text3)
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text3);
+            font-size: .85rem;
+            padding: 4px;
+            transition: var(--trans);
+            display: none;
+            border-radius: 4px
+        }
+
+        .clear-search:hover {
+            color: var(--text);
+            background: var(--surface2)
+        }
+
+        .sort-select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 34px 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: .85rem;
+            outline: none;
+            transition: var(--trans);
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%235a5a72' d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 14px
+        }
+
+        .sort-select:focus {
+            border-color: var(--accent)
+        }
+
+        .sort-select option {
+            background: var(--surface2)
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 14px;
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            font-size: .83rem;
+            font-weight: 500;
+            transition: var(--trans)
+        }
+
+        .icon-btn:hover {
+            border-color: var(--border2);
+            color: var(--text);
+            background: var(--surface2)
+        }
+
+        .icon-btn.danger:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: rgba(255, 79, 123, .06)
+        }
+
+        .bulk-bar {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: rgba(124, 92, 255, .12);
+            border: 1px solid rgba(124, 92, 255, .3);
+            border-radius: var(--radius-sm);
+            font-size: .85rem;
+            flex-wrap: wrap
+        }
+
+        .bulk-bar.active {
+            display: flex
+        }
+
+        .bulk-count {
+            font-weight: 700;
+            color: var(--accent2);
+            font-family: 'Space Mono', monospace;
+            font-size: .8rem
+        }
+
+        .bulk-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: .78rem;
+            font-weight: 600;
+            transition: var(--trans);
+            border: 1px solid transparent
+        }
+
+        .bulk-btn.danger {
+            background: rgba(255, 79, 123, .1);
+            color: var(--danger);
+            border-color: rgba(255, 79, 123, .25)
+        }
+
+        .bulk-btn.danger:hover {
+            background: rgba(255, 79, 123, .2)
+        }
+
+        .bulk-btn.neutral {
+            background: var(--surface2);
+            color: var(--text2);
+            border-color: var(--border)
+        }
+
+        .bulk-btn.neutral:hover {
+            color: var(--text)
+        }
+
+        .bulk-btn.export {
+            background: rgba(0, 229, 255, .08);
+            color: var(--accent);
+            border-color: rgba(0, 229, 255, .2)
+        }
+
+        .bulk-btn.export:hover {
+            background: rgba(0, 229, 255, .16)
+        }
+
+        .results-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: .8rem;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace
+        }
+
+        .results-info b {
+            color: var(--accent)
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 14px
+        }
+
+        .link-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: var(--trans);
+            position: relative;
+            overflow: hidden;
+            animation: cardIn .3s ease
+        }
+
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .link-card:hover {
+            border-color: var(--border2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .4)
+        }
+
+        .link-card.pinned {
+            border-color: rgba(255, 181, 71, .4)
+        }
+
+        .link-card.pinned::after {
+            content: '\01F4CC';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: .75rem;
+            opacity: .7
+        }
+
+        .link-card.selected {
+            border-color: rgba(124, 92, 255, .6);
+            background: rgba(124, 92, 255, .06)
+        }
+
+        .link-card.selected::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: var(--radius);
+            box-shadow: inset 0 0 0 2px rgba(124, 92, 255, .4);
+            pointer-events: none
+        }
+
+        .link-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px
+        }
+
+        .link-favicon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0
+        }
+
+        .link-meta {
+            flex: 1;
+            min-width: 0
+        }
+
+        .link-title {
+            font-size: .95rem;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px
+        }
+
+        .link-url {
+            font-size: .75rem;
+            color: var(--text3);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: 'Space Mono', monospace
+        }
+
+        .link-category {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .5px;
+            padding: 3px 9px;
+            border-radius: 99px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text2)
+        }
+
+        .link-category .cat-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent2)
+        }
+
+        .visit-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .68rem;
+            font-family: 'Space Mono', monospace;
+            color: var(--text3);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 2px 7px;
+            border-radius: 99px
+        }
+
+        .visit-badge.has-visits {
+            color: var(--success);
+            border-color: rgba(0, 224, 150, .2);
+            background: rgba(0, 224, 150, .06)
+        }
+
+        .link-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            padding-top: 10px
+        }
+
+        .link-date {
+            font-size: .7rem;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace
+        }
+
+        .link-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .link-action-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: .75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: var(--trans);
+            border: 1px solid transparent
+        }
+
+        .btn-visit {
+            background: rgba(0, 229, 255, .08);
+            color: var(--accent);
+            border-color: rgba(0, 229, 255, .2)
+        }
+
+        .btn-visit:hover {
+            background: rgba(0, 229, 255, .18)
+        }
+
+        .btn-copy {
+            background: rgba(124, 92, 255, .08);
+            color: var(--accent2);
+            border-color: rgba(124, 92, 255, .2)
+        }
+
+        .btn-copy:hover {
+            background: rgba(124, 92, 255, .18)
+        }
+
+        .btn-del {
+            background: rgba(255, 79, 123, .06);
+            color: var(--accent3);
+            border-color: rgba(255, 79, 123, .18)
+        }
+
+        .btn-del:hover {
+            background: rgba(255, 79, 123, .18)
+        }
+
+        .btn-edit {
+            background: rgba(255, 181, 71, .07);
+            color: var(--warning);
+            border-color: rgba(255, 181, 71, .2)
+        }
+
+        .btn-edit:hover {
+            background: rgba(255, 181, 71, .18)
+        }
+
+        .btn-pin {
+            background: var(--surface2);
+            color: var(--text3);
+            border-color: var(--border);
+            font-size: .8rem;
+            padding: 5px 8px
+        }
+
+        .btn-pin:hover {
+            color: var(--warning);
+            border-color: rgba(255, 181, 71, .3)
+        }
+
+        .btn-pin.pinned {
+            color: var(--warning);
+            background: rgba(255, 181, 71, .1);
+            border-color: rgba(255, 181, 71, .3)
+        }
+
+        .btn-select {
+            background: var(--surface2);
+            color: var(--text3);
+            border-color: var(--border);
+            font-size: .8rem;
+            padding: 5px 8px
+        }
+
+        .btn-select:hover {
+            color: var(--accent2);
+            border-color: rgba(124, 92, 255, .3)
+        }
+
+        .btn-select.selected {
+            color: var(--accent2);
+            background: rgba(124, 92, 255, .12);
+            border-color: rgba(124, 92, 255, .4)
+        }
+
+        .letter-avatar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 800;
+            font-family: 'Space Mono', monospace;
+            border-radius: 7px;
+            user-select: none
+        }
+
+        .empty-state {
+            grid-column: 1/-1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 72px 24px;
+            text-align: center;
+            gap: 12px
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+            opacity: .4
+        }
+
+        .empty-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text2)
+        }
+
+        .empty-sub {
+            font-size: .85rem;
+            color: var(--text3);
+            max-width: 300px
+        }
+
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 9999
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            font-size: .85rem;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
+            animation: toastIn .25s ease forwards;
+            min-width: 220px;
+            max-width: 320px
+        }
+
+        .toast.removing {
+            animation: toastOut .25s ease forwards
+        }
+
+        .toast-success {
+            border-left: 3px solid var(--success)
+        }
+
+        .toast-error {
+            border-left: 3px solid var(--danger)
+        }
+
+        .toast-info {
+            border-left: 3px solid var(--accent)
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translateX(0)
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(20px)
+            }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .7);
+            backdrop-filter: blur(6px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 28px;
+            max-width: 460px;
+            width: 100%;
+            transform: scale(.95);
+            transition: transform .2s;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .6)
+        }
+
+        .modal-overlay.open .modal {
+            transform: scale(1)
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 10px
+        }
+
+        .modal-body {
+            font-size: .88rem;
+            color: var(--text2);
+            margin-bottom: 24px;
+            line-height: 1.6
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end
+        }
+
+        .btn-cancel {
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            font-size: .88rem;
+            transition: var(--trans)
+        }
+
+        .btn-cancel:hover {
+            border-color: var(--border2);
+            color: var(--text)
+        }
+
+        .btn-confirm {
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            background: var(--danger);
+            color: #fff;
+            font-size: .88rem;
+            font-weight: 700;
+            transition: var(--trans)
+        }
+
+        .btn-confirm:hover {
+            background: #ff2060
+        }
+
+        .btn-primary {
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            color: #fff;
+            font-size: .88rem;
+            font-weight: 700;
+            transition: var(--trans)
+        }
+
+        .btn-primary:hover {
+            opacity: .85
+        }
+
+        .confirm-preview {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .confirm-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: .83rem
+        }
+
+        .confirm-label {
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+            font-size: .7rem;
+            min-width: 70px;
+            padding-top: 1px;
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+
+        .confirm-val {
+            color: var(--text);
+            font-weight: 500;
+            word-break: break-all;
+            flex: 1
+        }
+
+        .confirm-val.url {
+            color: var(--accent);
+            font-family: 'Space Mono', monospace;
+            font-size: .75rem
+        }
+
+        .confirm-val.notes {
+            color: var(--text2);
+            font-style: italic
+        }
+
+        .import-label {
+            display: block;
+            font-size: .75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text3);
+            text-transform: uppercase;
+            margin-bottom: 8px
+        }
+
+        .data-textarea {
+            width: 100%;
+            height: 130px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            font-size: .75rem;
+            font-family: 'Space Mono', monospace;
+            resize: vertical;
+            outline: none
+        }
+
+        .data-textarea:focus {
+            border-color: var(--accent)
+        }
+
+        .edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px
+        }
+
+        .edit-form .form-group {
+            gap: 5px
+        }
+
+        .edit-form label {
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text3);
+            text-transform: uppercase
+        }
+
+        .edit-input {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            font-size: .88rem;
+            outline: none;
+            width: 100%;
+            transition: var(--trans)
+        }
+
+        .edit-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, .08)
+        }
+
+        .edit-select {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            font-size: .88rem;
+            outline: none;
+            width: 100%;
+            transition: var(--trans);
+            appearance: none;
+            cursor: pointer
+        }
+
+        .edit-select:focus {
+            border-color: var(--accent)
+        }
+
+        .sidebar-toggle {
+            display: none;
+            padding: 7px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            font-size: .82rem;
+            align-items: center;
+            gap: 6px
+        }
+
+        #db-loading {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            flex-direction: column;
+            gap: 16px;
+            font-family: 'Space Mono', monospace;
+            font-size: .85rem;
+            color: var(--text3)
+        }
+
+        .db-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .7s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        @media(max-width:900px) {
+            main {
+                grid-template-columns: 1fr
+            }
+
+            aside {
+                position: fixed;
+                top: 64px;
+                left: 0;
+                width: 260px;
+                height: calc(100vh - 64px);
+                z-index: 90;
+                transform: translateX(-100%);
+                transition: transform .25s ease;
+                box-shadow: 4px 0 24px rgba(0, 0, 0, .4)
+            }
+
+            aside.open {
+                transform: translateX(0)
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                top: 64px;
+                background: rgba(0, 0, 0, .5);
+                z-index: 89
+            }
+
+            .sidebar-overlay.open {
+                display: block
+            }
+
+            .sidebar-toggle {
+                display: flex
+            }
+        }
+
+        @media(max-width:600px) {
+            header {
+                padding: 0 16px
+            }
+
+            .header-stats {
+                display: none
+            }
+
+            .content {
+                padding: 16px;
+                gap: 16px
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr
+            }
+
+            .form-group.full {
+                grid-column: 1
+            }
+
+            .links-grid {
+                grid-template-columns: 1fr
+            }
+
+            .toolbar {
+                gap: 8px
+            }
+
+            .icon-btn span {
+                display: none
+            }
+
+            .logo-text {
+                display: none
+            }
+        }
+
+        mark {
+            background: rgba(0, 229, 255, .25);
+            color: var(--accent);
+            border-radius: 2px;
+            padding: 0 1px
+        }
+
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 1px var(--border), 0 4px 32px rgba(0, 0, 0, .5)
+            }
+
+            50% {
+                box-shadow: 0 0 0 1px rgba(0, 229, 255, .3), 0 4px 40px rgba(0, 229, 255, .1)
+            }
+        }
+
+        .link-card:hover {
+            animation: glowPulse 2s ease infinite
+        }
+
+        .link-card.pinned:hover {
+            animation: none;
+            box-shadow: 0 0 0 1px rgba(255, 181, 71, .4), 0 8px 32px rgba(255, 181, 71, .08)
+        }
+
+        .shortcut-hint {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: .7rem;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace
+        }
+
+        .kbd {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: .68rem
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="db-loading" aria-live="polite" aria-label="Loading vault">
+        <div class="db-spinner"></div>
+        <span>Opening vault&hellip;</span>
+    </div>
+
+    <div class="app-wrapper" id="app-wrapper" style="display:none">
+        <header>
+            <div class="logo">
+                <div class="logo-icon" aria-hidden="true">&#128279;</div><span class="logo-text"
+                    style="font-family:'Space Mono',monospace">Link<span style="color:#fff">Vault</span></span>
+            </div>
+            <div class="header-stats" aria-label="Vault statistics">
+                <div class="stat-pill" id="total-stat">Total: <span>0</span></div>
+                <div class="stat-pill" id="cat-stat">Categories: <span>0</span></div>
+                <div class="stat-pill" id="fav-stat">Pinned: <span>0</span></div>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle-btn" aria-controls="sidebar" aria-expanded="false">&#9776;
+                Categories</button>
+        </header>
+        <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+        <main>
+            <aside id="sidebar" aria-label="Category navigation">
+                <div class="sidebar-title" aria-hidden="true">&#128194; Categories</div>
+                <button class="cat-btn active" data-cat="all" onclick="filterByCategory('all')"><span
+                        class="cat-left"><span class="cat-icon" aria-hidden="true">&#127760;</span> All
+                        Links</span><span class="cat-count" id="count-all" aria-label="total links">0</span></button>
+                <button class="cat-btn" data-cat="__pinned__" onclick="filterByCategory('__pinned__')"><span
+                        class="cat-left"><span class="cat-icon" aria-hidden="true">&#128204;</span> Pinned</span><span
+                        class="cat-count" id="count-pinned" aria-label="pinned links">0</span></button>
+                <div class="sidebar-section-divider" aria-hidden="true">by category</div>
+                <div id="category-list" role="list"></div>
+                <div class="sidebar-add-cat">
+                    <button class="cat-btn" onclick="toggleAddCatForm()" aria-expanded="false" id="new-cat-toggle-btn"
+                        style="color:var(--accent);border-color:rgba(0,229,255,.2)"><span class="cat-left"><span
+                                class="cat-icon" aria-hidden="true">&#xFF0B;</span> New Category</span></button>
+                    <div class="add-cat-form" id="add-cat-form" style="display:none" role="group"
+                        aria-label="Add new category">
+                        <label for="new-cat-input" class="sr-only">New category name</label>
+                        <input class="add-cat-input" id="new-cat-input" placeholder="Category name&hellip;"
+                            maxlength="25" autocomplete="off">
+                        <button class="add-cat-btn" onclick="addCategory()" type="button"
+                            aria-label="Add category">Add</button>
+                    </div>
+                </div>
+                <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--border)"
+                    aria-label="Keyboard shortcuts">
+                    <div class="shortcut-hint"><span><kbd class="kbd">Ctrl+K</kbd> Search</span><span><kbd
+                                class="kbd">Ctrl+&#8629;</kbd> Save</span><span><kbd class="kbd">Esc</kbd> Close</span>
+                    </div>
+                </div>
+            </aside>
+            <div class="content">
+                <section class="add-card" aria-label="Add new link">
+                    <div class="add-card-title" aria-hidden="true">// ADD NEW LINK</div>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="link-title">Title</label>
+                            <div class="input-wrap"><span class="input-icon" aria-hidden="true">&#128221;</span><input
+                                    class="form-input" id="link-title" name="link-title" placeholder="e.g. My Portfolio"
+                                    maxlength="80" autocomplete="off"></div>
+                        </div>
+                        <div class="form-group"><label for="link-category">Category</label>
+                            <div class="input-wrap"><span class="input-icon"
+                                    aria-hidden="true">&#127991;&#65039;</span><select class="form-select"
+                                    id="link-category" name="link-category"></select></div>
+                        </div>
+                        <div class="form-group full"><label for="link-url">URL</label>
+                            <div class="input-wrap"><span class="input-icon" aria-hidden="true">&#127760;</span><input
+                                    class="form-input" id="link-url" name="link-url" placeholder="https://example.com"
+                                    type="url" autocomplete="url"></div>
+                        </div>
+                        <div class="form-group full"><label for="link-notes">Notes <span
+                                    style="color:var(--text3);font-size:.7rem;text-transform:none;letter-spacing:0">(optional)</span></label>
+                            <div class="input-wrap"><span class="input-icon" style="top:14px;transform:none"
+                                    aria-hidden="true">&#128172;</span><input class="form-input" id="link-notes"
+                                    name="link-notes" placeholder="Short description or note&hellip;" maxlength="120"
+                                    autocomplete="off"></div>
+                        </div>
+                        <div class="form-group full"><button class="submit-btn" onclick="promptAddLink()"
+                                type="button"><span aria-hidden="true">&#9889;</span> Save Link</button></div>
+                    </div>
+                </section>
+                <div class="toolbar" role="toolbar" aria-label="Link management tools">
+                    <div class="search-wrap">
+                        <label for="search-input" class="sr-only">Search links</label>
+                        <span class="search-icon" aria-hidden="true">&#128269;</span>
+                        <input class="search-input" id="search-input" name="search-input"
+                            placeholder="Search by title or notes&hellip; (Ctrl+K)" oninput="onSearch(this)"
+                            autocomplete="off" aria-label="Search links by title, notes, or URL" role="searchbox">
+                        <button class="clear-search" id="clear-search-btn" onclick="clearSearch()" type="button"
+                            aria-label="Clear search">&times;</button>
+                    </div>
+                    <label for="sort-select" class="sr-only">Sort links</label>
+                    <select class="sort-select" id="sort-select" name="sort-select" onchange="renderLinks()"
+                        aria-label="Sort links">
+                        <option value="newest">&#8595; Newest</option>
+                        <option value="oldest">&#8593; Oldest</option>
+                        <option value="az">A &rarr; Z</option>
+                        <option value="za">Z &rarr; A</option>
+                        <option value="mostvisited">&#128065; Most Visited</option>
+                        <option value="pinned">&#128204; Pinned First</option>
+                    </select>
+                    <button class="icon-btn" onclick="exportData()" type="button">&#8593; <span>Export</span></button>
+                    <button class="icon-btn" onclick="openImportModal()" type="button">&#8595;
+                        <span>Import</span></button>
+                    <button class="icon-btn danger" id="clear-all-btn" onclick="openClearModal()"
+                        type="button">&#128465; <span>Clear All</span></button>
+                </div>
+                <div class="bulk-bar" id="bulk-bar" role="toolbar" aria-label="Bulk actions" aria-live="polite">
+                    <span class="bulk-count" id="bulk-count-label">0 selected</span>
+                    <button class="bulk-btn export" onclick="bulkExport()" type="button">&#8593; Export
+                        Selected</button>
+                    <button class="bulk-btn danger" onclick="bulkDelete()" type="button">&#128465; Delete
+                        Selected</button>
+                    <button class="bulk-btn neutral" onclick="bulkDeselect()" type="button">&times; Deselect
+                        All</button>
+                </div>
+                <div class="results-info" id="results-info" aria-live="polite"></div>
+                <div class="links-grid" id="links-grid" role="list" aria-label="Saved links"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" role="alert" aria-live="assertive" aria-atomic="true"></div>
+    <div class="modal-overlay" id="add-confirm-modal" role="dialog" aria-modal="true"
+        aria-labelledby="add-confirm-title">
+        <div class="modal">
+            <div class="modal-title" id="add-confirm-title">&#9889; Confirm New Link</div>
+            <div class="modal-body">Review the details below before saving this link to your vault.</div>
+            <div class="confirm-preview" id="add-preview-box"></div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('add-confirm-modal')"
+                    type="button">Cancel</button><button class="btn-primary" onclick="confirmAndAdd()"
+                    type="button">&#9989; Save Link</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+        <div class="modal">
+            <div class="modal-title" id="delete-modal-title">&#128465; Delete Link?</div>
+            <div class="modal-body" id="delete-modal-body">Are you sure you want to delete this link? This cannot be
+                undone.</div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('delete-modal')"
+                    type="button">Cancel</button><button class="btn-confirm" id="delete-confirm-btn"
+                    type="button">Delete</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="clear-modal" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
+        <div class="modal">
+            <div class="modal-title" id="clear-modal-title">&#9888;&#65039; Clear All Links?</div>
+            <div class="modal-body">This will permanently delete <strong id="clear-count">all</strong> links in the
+                current view. This cannot be undone.</div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('clear-modal')"
+                    type="button">Cancel</button><button class="btn-confirm" id="clear-confirm-btn" type="button">Clear
+                    All</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+        <div class="modal">
+            <div class="modal-title" id="import-modal-title">&#8595; Import Links</div>
+            <div class="modal-body">Paste exported JSON data below. Existing links will be merged (duplicates skipped).
+            </div><label for="import-textarea" class="import-label">JSON Import Data</label><textarea
+                class="data-textarea" id="import-textarea" name="import-textarea" placeholder="Paste JSON here&hellip;"
+                aria-label="JSON import data" spellcheck="false"></textarea>
+            <div class="modal-actions" style="margin-top:14px"><button class="btn-cancel"
+                    onclick="closeModal('import-modal')" type="button">Cancel</button><button class="btn-confirm"
+                    style="background:var(--accent2)" onclick="importData()" type="button">Import</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="delcat-modal" role="dialog" aria-modal="true" aria-labelledby="delcat-modal-title">
+        <div class="modal">
+            <div class="modal-title" id="delcat-modal-title">&#128465; Delete Category?</div>
+            <div class="modal-body" id="delcat-modal-body">Deleting this category will reassign all its links to
+                &ldquo;Other&rdquo;. Continue?</div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('delcat-modal')"
+                    type="button">Cancel</button><button class="btn-confirm" id="delcat-confirm-btn"
+                    type="button">Delete</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+        <div class="modal">
+            <div class="modal-title" id="edit-modal-title">&#9999;&#65039; Edit Link</div>
+            <div class="edit-form" id="edit-form">
+                <div class="form-group"><label for="edit-title">Title</label><input class="edit-input" id="edit-title"
+                        name="edit-title" maxlength="80" placeholder="Link title" autocomplete="off"></div>
+                <div class="form-group"><label for="edit-url">URL</label><input class="edit-input" id="edit-url"
+                        name="edit-url" placeholder="https://example.com" type="url" autocomplete="url"></div>
+                <div class="form-group"><label for="edit-notes">Notes</label><input class="edit-input" id="edit-notes"
+                        name="edit-notes" maxlength="120" placeholder="Short note (optional)" autocomplete="off">
+                </div>
+                <div class="form-group"><label for="edit-category">Category</label><select class="edit-select"
+                        id="edit-category" name="edit-category"></select></div>
+            </div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('edit-modal')"
+                    type="button">Cancel</button><button class="btn-primary" onclick="saveEdit()"
+                    type="button">&#128190; Save Changes</button></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="bulk-delete-modal" role="dialog" aria-modal="true"
+        aria-labelledby="bulk-delete-title">
+        <div class="modal">
+            <div class="modal-title" id="bulk-delete-title">&#128465; Delete Selected Links?</div>
+            <div class="modal-body" id="bulk-delete-body">This will permanently delete the selected links.</div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('bulk-delete-modal')"
+                    type="button">Cancel</button><button class="btn-confirm" id="bulk-delete-confirm-btn"
+                    type="button">Delete All Selected</button></div>
+        </div>
+    </div>
+
+    <script>
+        'use strict';
+
+        /* ================================================================
+           UTILITY — debounce
+           Used to rate-limit the search handler so the DOM is not rebuilt
+           on every single keystroke.
+        ================================================================ */
+        function debounce(fn, ms) {
+            let t;
+            return function () {
+                const ctx = this, args = arguments;
+                clearTimeout(t);
+                t = setTimeout(function () { fn.apply(ctx, args); }, ms);
+            };
+        }
+
+        /* ================================================================
+           UTILITY — export timestamp
+           Produces a filename-safe date+time string in the format
+           DD-MM-YYYY_HH-MM-AM/PM  (e.g. 03-04-2026_11-56-AM)
+           Slashes, colons and spaces are replaced with hyphens/underscores
+           so the string is valid on Windows, macOS and Linux.
+        ================================================================ */
+        function getExportTimestamp() {
+            const d = new Date();
+            const day = String(d.getDate()).padStart(2, '0');
+            const mon = String(d.getMonth() + 1).padStart(2, '0');
+            const yr = d.getFullYear();
+            const h24 = d.getHours();
+            const h12 = String(h24 % 12 || 12).padStart(2, '0');
+            const mins = String(d.getMinutes()).padStart(2, '0');
+            const ap = h24 >= 12 ? 'PM' : 'AM';
+            return day + '-' + mon + '-' + yr + '_' + h12 + '-' + mins + '-' + ap;
+        }
+
+        /* ================================================================
+           INDEXED DB LAYER  (replaces localStorage)
+           - Identical key names so existing exports/imports still work
+           - One-time migration copies localStorage data on first launch
+        ================================================================ */
+        const DB_NAME = 'LinkVaultDB';
+        const DB_VERSION = 1;
+        const IDB_STORE = 'kvstore';
+        let _idb = null;
+
+        function _openDB() {
+            if (_idb) return Promise.resolve(_idb);
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE))
+                        db.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = e => { _idb = e.target.result; resolve(_idb); };
+                req.onerror = e => reject(e.target.error);
+                req.onblocked = () => reject(new Error('IDB blocked'));
+            });
+        }
+        async function _idbGet(key) {
+            const db = await _openDB();
+            return new Promise((resolve, reject) => {
+                const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
+                req.onsuccess = e => resolve(e.target.result ?? null);
+                req.onerror = e => reject(e.target.error);
+            });
+        }
+        async function _idbSet(key, value) {
+            const db = await _openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).put(value, key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = e => reject(e.target.error);
+            });
+        }
+        async function _migrateFromLocalStorage() {
+            const LS_L = 'lv_links_v2', LS_C = 'lv_cats_v2';
+            try {
+                const [il, ic] = await Promise.all([_idbGet(LS_L), _idbGet(LS_C)]);
+                if (il === null) {
+                    const r = localStorage.getItem(LS_L);
+                    if (r) { try { await _idbSet(LS_L, JSON.parse(r)); localStorage.removeItem(LS_L); } catch { } }
+                }
+                if (ic === null) {
+                    const r = localStorage.getItem(LS_C);
+                    if (r) { try { await _idbSet(LS_C, JSON.parse(r)); localStorage.removeItem(LS_C); } catch { } }
+                }
+            } catch { }
+        }
+
+        /* ================================================================
+           DATA LAYER
+        ================================================================ */
+        const STORAGE_KEY_LINKS = 'lv_links_v2';
+        const STORAGE_KEY_CATS = 'lv_cats_v2';
+
+        const DEFAULT_CATS = [
+            { id: 'facebook', label: 'Facebook', icon: '📘' }, { id: 'instagram', label: 'Instagram', icon: '📸' },
+            { id: 'youtube', label: 'YouTube', icon: '▶️' }, { id: 'twitter', label: 'X / Twitter', icon: '🐦' },
+            { id: 'linkedin', label: 'LinkedIn', icon: '💼' }, { id: 'github', label: 'GitHub', icon: '🐙' },
+            { id: 'reddit', label: 'Reddit', icon: '🟠' }, { id: 'tiktok', label: 'TikTok', icon: '🎵' },
+            { id: 'whatsapp', label: 'WhatsApp', icon: '💬' }, { id: 'telegram', label: 'Telegram', icon: '✈️' },
+            { id: 'news', label: 'News', icon: '📰' }, { id: 'shopping', label: 'Shopping', icon: '🛒' },
+            { id: 'tools', label: 'Tools', icon: '🔧' }, { id: 'education', label: 'Education', icon: '🎓' },
+            { id: 'other', label: 'Other', icon: '📎' },
+        ];
+
+        /* ── SECURITY: regex used to sanitize category IDs ── */
+        const _SAFE_CAT_ID = /[^a-z0-9-]/g;
+        /* ── SECURITY: regex used to sanitize link IDs ── */
+        const _SAFE_LINK_ID = /[^a-zA-Z0-9_.\-]/g;
+
+        let links = [];
+        let categories = [];
+        let activeCategory = 'all';
+        let deletePendingId = null;
+        let deleteCatPending = null;
+        let editPendingId = null;
+        let selectedIds = new Set();
+        let pendingAddPayload = null;
+
+        async function loadData() {
+            try { links = (await _idbGet(STORAGE_KEY_LINKS)) || []; } catch { links = []; }
+            try { categories = (await _idbGet(STORAGE_KEY_CATS)) || DEFAULT_CATS; } catch { categories = DEFAULT_CATS; }
+
+            if (!Array.isArray(categories) || !categories.length) categories = DEFAULT_CATS.slice();
+
+            /* ── SECURITY: sanitize category IDs on load ─────────────────────
+               Category IDs must only contain lowercase letters, digits and
+               hyphens so they are safe to embed in data-* attributes and
+               to use as argument values in onclick handlers via dataset reads.
+            ─────────────────────────────────────────────────────────────── */
+            categories = categories
+                .filter(c => c && typeof c.id === 'string' && typeof c.label === 'string')
+                .map(c => ({
+                    id: String(c.id).toLowerCase().replace(/\s+/g, '-').replace(_SAFE_CAT_ID, '').slice(0, 50),
+                    label: String(c.label).slice(0, 50),
+                    icon: typeof c.icon === 'string' ? c.icon.slice(0, 10) : '🏷️'
+                }))
+                .filter(c => c.id); // drop entries whose ID became empty after sanitisation
+
+            /* Deduplicate by ID (sanitisation may collapse two IDs into one) */
+            const _seenCatIds = new Set();
+            categories = categories.filter(c => {
+                if (_seenCatIds.has(c.id)) return false;
+                _seenCatIds.add(c.id);
+                return true;
+            });
+
+            if (!categories.some(c => c.id === 'other'))
+                categories.push({ id: 'other', label: 'Other', icon: '📎' });
+
+            /* ── SECURITY: sanitize link IDs on load ─────────────────────────
+               Link IDs must only contain alphanumeric chars, underscores, dots
+               and hyphens to be safe in data-* attributes.
+            ─────────────────────────────────────────────────────────────── */
+            links = Array.isArray(links) ? links : [];
+            links = links
+                .filter(l => l && typeof l.id === 'string' && typeof l.title === 'string' && typeof l.url === 'string')
+                .map(l => {
+                    const u = normalizeUrl(l.url); if (!u) return null;
+                    const sid = String(l.id).replace(_SAFE_LINK_ID, '').slice(0, 100);
+                    if (!sid) return null;
+                    return {
+                        id: sid,
+                        title: String(l.title).slice(0, 80),
+                        url: u.slice(0, 2000),
+                        category: typeof l.category === 'string' ? l.category.slice(0, 50) : 'other',
+                        notes: typeof l.notes === 'string' ? l.notes.slice(0, 120) : '',
+                        createdAt: typeof l.createdAt === 'string' ? l.createdAt : new Date().toISOString(),
+                        editedAt: typeof l.editedAt === 'string' ? l.editedAt : undefined,
+                        pinned: Boolean(l.pinned),
+                        visitCount: Number.isFinite(l.visitCount) ? l.visitCount : 0
+                    };
+                }).filter(Boolean);
+
+            links.forEach(l => {
+                if (l.pinned === undefined) l.pinned = false;
+                if (l.visitCount === undefined) l.visitCount = 0;
+                if (!categories.find(c => c.id === l.category)) l.category = 'other';
+            });
+        }
+
+        /* Fire-and-forget — callers stay synchronous */
+        function saveLinks() { _idbSet(STORAGE_KEY_LINKS, links).catch(e => console.error('saveLinks', e)); }
+        function saveCats() { _idbSet(STORAGE_KEY_CATS, categories).catch(e => console.error('saveCats', e)); }
+
+        /* ================================================================
+           URL HELPER
+        ================================================================ */
+        function normalizeUrl(input) {
+            const raw = String(input || '').trim(); if (!raw) return '';
+            try {
+                const c = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+                const p = new URL(c);
+                if (p.protocol !== 'http:' && p.protocol !== 'https:') return '';
+                return p.href;
+            } catch { return ''; }
+        }
+
+        /* ================================================================
+           FAVICON / AVATAR HELPERS
+        ================================================================ */
+        const _AVATAR_PAL = ['#00e5ff', '#7c5cff', '#ff4f7b', '#00e096', '#ffb547', '#a78bfa', '#34d399', '#f87171', '#60a5fa', '#fbbf24'];
+
+        function _avatarColor(hostname) {
+            let h = 0; const s = String(hostname || '').toLowerCase();
+            for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffffff;
+            return _AVATAR_PAL[Math.abs(h) % _AVATAR_PAL.length];
+        }
+        function getHostname(url) { try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); } catch { return ''; } }
+        function getRootDomainFromHostname(h) { const p = String(h || '').split('.').filter(Boolean); return p.length <= 2 ? (h || '') : p.slice(-2).join('.'); }
+
+        function generateLetterAvatar(url) {
+            const host = getHostname(url);
+            const letter = (host.charAt(0) || 'L').toUpperCase();
+            const color = _avatarColor(host || url);
+            return '<div class="letter-avatar" style="background:' + color + '22;color:' + color + '" aria-hidden="true">' + escHtml(letter) + '</div>';
+        }
+
+        /* Legacy compatibility — preserved but unused in render path */
+        function getFavicon(url) { try { const h = getHostname(url), r = getRootDomainFromHostname(h); return r ? 'https://www.google.com/s2/favicons?sz=64&domain=' + encodeURIComponent(r) : null; } catch { return null; } }
+        function getFaviconSources(url) { const s = getFavicon(url); return s ? [s] : []; }
+        function faviconError(img) { const p = img && img.parentElement; if (p) p.innerHTML = generateLetterAvatar((img.dataset && img.dataset.url) || ''); }
+        function faviconFallback(img) { faviconError(img); }
+
+        /* ================================================================
+           CATEGORIES
+        ================================================================ */
+        function buildCategoryOptions() {
+            document.getElementById('link-category').innerHTML =
+                categories.map(c => '<option value="' + escHtml(c.id) + '">' + escHtml(c.icon + ' ' + c.label) + '</option>').join('');
+        }
+
+        /* ── SECURITY: onclick uses this.dataset.cat (data attribute read)
+           instead of embedding the ID directly inside the JS string literal.
+           This eliminates any risk of JS injection through crafted category IDs.
+        ── */
+        function buildCategoryList() {
+            document.getElementById('category-list').innerHTML = categories.map(c => {
+                const cnt = links.filter(l => l.category === c.id).length;
+                const isDef = DEFAULT_CATS.some(d => d.id === c.id);
+                const cid = escHtml(c.id);
+                return '<div role="listitem">'
+                    + '<button class="cat-btn ' + (activeCategory === c.id ? 'active' : '') + '"'
+                    + ' data-cat="' + cid + '"'
+                    + ' onclick="filterByCategory(this.dataset.cat)"'
+                    + ' aria-pressed="' + (activeCategory === c.id) + '">'
+                    + '<span class="cat-left">'
+                    + '<span class="cat-icon" aria-hidden="true">' + escHtml(c.icon) + '</span>'
+                    + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">' + escHtml(c.label) + '</span>'
+                    + '</span>'
+                    + '<span style="display:flex;align-items:center;gap:4px">'
+                    + '<span class="cat-count" aria-label="' + cnt + ' links">' + cnt + '</span>'
+                    + (!isDef
+                        ? '<button class="cat-delete-btn" type="button"'
+                        + ' data-cat="' + cid + '"'
+                        + ' aria-label="Delete category ' + escHtml(c.label) + '"'
+                        + ' onclick="event.stopPropagation();openDelCatModal(this.dataset.cat)">&times;</button>'
+                        : '')
+                    + '</span>'
+                    + '</button></div>';
+            }).join('');
+
+            const pc = links.filter(l => l.pinned).length;
+            document.getElementById('count-pinned').textContent = pc;
+            document.getElementById('count-all').textContent = links.length;
+            document.getElementById('total-stat').innerHTML = 'Total: <span>' + links.length + '</span>';
+            document.getElementById('cat-stat').innerHTML = 'Categories: <span>' + categories.length + '</span>';
+            document.getElementById('fav-stat').innerHTML = 'Pinned: <span>' + pc + '</span>';
+        }
+
+        function filterByCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                const a = b.dataset.cat === cat;
+                b.classList.toggle('active', a);
+                b.setAttribute('aria-pressed', String(a));
+            });
+            renderLinks();
+            if (window.innerWidth <= 900) closeSidebar();
+        }
+        function toggleAddCatForm() {
+            const f = document.getElementById('add-cat-form');
+            const btn = document.getElementById('new-cat-toggle-btn');
+            const open = f.style.display !== 'none';
+            f.style.display = open ? 'none' : 'flex';
+            btn.setAttribute('aria-expanded', String(!open));
+            if (!open) document.getElementById('new-cat-input').focus();
+        }
+        function addCategory() {
+            const inp = document.getElementById('new-cat-input');
+            const name = inp.value.trim();
+            if (!name) { showToast('Enter a category name.', 'error'); return; }
+            const id = name.toLowerCase().replace(/\s+/g, '-').replace(_SAFE_CAT_ID, '');
+            if (!id) { showToast('Category name must contain letters or numbers.', 'error'); return; }
+            if (categories.find(c => c.id === id || c.label.toLowerCase() === name.toLowerCase())) { showToast('Category already exists!', 'error'); return; }
+            const icons = ['🏷️', '⭐', '🎯', '🔖', '💡', '🎨', '🚀', '💎', '🌟', '🎪'];
+            categories.push({ id, label: name, icon: icons[Math.floor(Math.random() * icons.length)] });
+            saveCats(); buildCategoryOptions(); buildCategoryList();
+            inp.value = '';
+            document.getElementById('add-cat-form').style.display = 'none';
+            document.getElementById('new-cat-toggle-btn').setAttribute('aria-expanded', 'false');
+            showToast('Category "' + escHtml(name) + '" added! 🏷️', 'success');
+        }
+        function openDelCatModal(catId) {
+            deleteCatPending = catId;
+            const cat = categories.find(c => c.id === catId);
+            const cnt = links.filter(l => l.category === catId).length;
+            document.getElementById('delcat-modal-body').innerHTML =
+                'You are about to delete the category <strong>' + escHtml(cat?.label || catId) + '</strong>.<br>'
+                + 'This will reassign <strong>' + cnt + '</strong> link(s) to &ldquo;Other&rdquo;. <br>Continue?';
+            document.getElementById('delcat-confirm-btn').onclick = () => {
+                links.forEach(l => { if (l.category === catId) l.category = 'other'; });
+                categories = categories.filter(c => c.id !== catId);
+                saveLinks(); saveCats(); buildCategoryOptions(); buildCategoryList();
+                if (activeCategory === catId) filterByCategory('all');
+                renderLinks();
+                closeModal('delcat-modal');
+                showToast('Category "' + escHtml(cat?.label || catId) + '" deleted.', 'info');
+            };
+            openModal('delcat-modal');
+        }
+
+        /* ================================================================
+           LINKS - ADD
+        ================================================================ */
+        function promptAddLink() {
+            const title = document.getElementById('link-title').value.trim();
+            const url = document.getElementById('link-url').value.trim();
+            const category = document.getElementById('link-category').value;
+            const notes = document.getElementById('link-notes').value.trim();
+            if (!title) { shakeField('link-title'); showToast('Please enter a title.', 'error'); return; }
+            if (!url) { shakeField('link-url'); showToast('Please enter a URL.', 'error'); return; }
+            const finalUrl = normalizeUrl(url);
+            if (!finalUrl) { shakeField('link-url'); showToast('Please enter a valid http(s) URL.', 'error'); return; }
+            const cat = categories.find(c => c.id === category);
+            pendingAddPayload = { title, url: finalUrl, category, notes };
+            document.getElementById('add-preview-box').innerHTML =
+                '<div class="confirm-row"><span class="confirm-label">Title</span><span class="confirm-val">' + escHtml(title) + '</span></div>'
+                + '<div class="confirm-row"><span class="confirm-label">URL</span><span class="confirm-val url">' + escHtml(finalUrl) + '</span></div>'
+                + '<div class="confirm-row"><span class="confirm-label">Category</span><span class="confirm-val">' + (cat ? escHtml(cat.icon + ' ' + cat.label) : escHtml(category)) + '</span></div>'
+                + (notes ? '<div class="confirm-row"><span class="confirm-label">Notes</span><span class="confirm-val notes">' + escHtml(notes) + '</span></div>' : '');
+            openModal('add-confirm-modal');
+        }
+        function confirmAndAdd() { closeModal('add-confirm-modal'); if (!pendingAddPayload) return; addLink(pendingAddPayload); pendingAddPayload = null; }
+        function addLink(payload) {
+            let title, url, category, notes;
+            if (payload) {
+                ({ title, url, category, notes } = payload);
+            } else {
+                title = document.getElementById('link-title').value.trim();
+                url = document.getElementById('link-url').value.trim();
+                category = document.getElementById('link-category').value;
+                notes = document.getElementById('link-notes').value.trim();
+                if (!title) { shakeField('link-title'); showToast('Please enter a title.', 'error'); return; }
+                if (!url) { shakeField('link-url'); showToast('Please enter a URL.', 'error'); return; }
+                url = normalizeUrl(url); if (!url) { showToast('Please enter a valid http(s) URL.', 'error'); return; }
+            }
+            const safeUrl = normalizeUrl(url); if (!safeUrl) { showToast('Please enter a valid HTTP or HTTPS URL.', 'error'); return; }
+            const safeCat = categories.find(c => c.id === category) ? category : 'other';
+            links.unshift({
+                id: Date.now() + Math.random().toString(36).slice(2),
+                title, url: safeUrl, category: safeCat, notes,
+                createdAt: new Date().toISOString(), pinned: false, visitCount: 0
+            });
+            saveLinks(); buildCategoryList(); renderLinks();
+            document.getElementById('link-title').value = '';
+            document.getElementById('link-url').value = '';
+            document.getElementById('link-notes').value = '';
+            showToast('Link saved! 🚀', 'success');
+        }
+
+        /* ================================================================
+           DELETE
+        ================================================================ */
+        function confirmDelete(id) {
+            deletePendingId = id;
+            const link = links.find(l => l.id === id);
+            const cat = getCatInfo(link?.category);
+            document.getElementById('delete-modal-body').innerHTML =
+                'You are about to delete:<br><br><strong>&ldquo;' + escHtml(link?.title || 'this link') + '&rdquo;</strong><br>'
+                + '<span style="font-family:\'Space Mono\',monospace;font-size:.75rem;color:var(--accent)">' + escHtml(link?.url || '') + '</span><br>'
+                + '<span style="font-size:.8rem;color:var(--text3)">Category: ' + escHtml(cat.icon + ' ' + cat.label)
+                + ' &nbsp;&middot;&nbsp; Added: ' + formatDate(link?.createdAt) + '</span><br><br>This cannot be undone.';
+            document.getElementById('delete-confirm-btn').onclick = () => {
+                links = links.filter(l => l.id !== deletePendingId);
+                selectedIds.delete(deletePendingId);
+                saveLinks(); buildCategoryList(); renderLinks(); updateBulkBar();
+                closeModal('delete-modal');
+                showToast('Link deleted.', 'info');
+            };
+            openModal('delete-modal');
+        }
+        function openClearModal() {
+            const visible = getFilteredLinks();
+            document.getElementById('clear-count').textContent = visible.length + ' visible';
+            document.getElementById('clear-confirm-btn').onclick = () => {
+                const vids = new Set(visible.map(l => l.id));
+                links = links.filter(l => !vids.has(l.id));
+                vids.forEach(id => selectedIds.delete(id));
+                saveLinks(); buildCategoryList(); renderLinks(); updateBulkBar();
+                closeModal('clear-modal');
+                showToast('Links cleared.', 'info');
+            };
+            openModal('clear-modal');
+        }
+
+        /* ================================================================
+           PIN / EDIT / VISIT
+        ================================================================ */
+        function togglePin(id) {
+            const link = links.find(l => l.id === id); if (!link) return;
+            link.pinned = !link.pinned;
+            saveLinks(); buildCategoryList(); renderLinks();
+            showToast(link.pinned ? '📌 "' + escHtml(link.title) + '" pinned!' : 'Unpinned "' + escHtml(link.title) + '".', 'info');
+        }
+        function openEditModal(id) {
+            editPendingId = id;
+            const link = links.find(l => l.id === id); if (!link) return;
+            document.getElementById('edit-category').innerHTML =
+                categories.map(c => '<option value="' + escHtml(c.id) + '"' + (c.id === link.category ? ' selected' : '') + '>'
+                    + escHtml(c.icon + ' ' + c.label) + '</option>').join('');
+            document.getElementById('edit-title').value = link.title;
+            document.getElementById('edit-url').value = link.url;
+            document.getElementById('edit-notes').value = link.notes || '';
+            openModal('edit-modal');
+        }
+        function saveEdit() {
+            const link = links.find(l => l.id === editPendingId); if (!link) return;
+            const nt = document.getElementById('edit-title').value.trim();
+            const nu = document.getElementById('edit-url').value.trim();
+            const nn = document.getElementById('edit-notes').value.trim();
+            const nc = document.getElementById('edit-category').value;
+            if (!nt) { showToast('Title cannot be empty.', 'error'); return; }
+            if (!nu) { showToast('URL cannot be empty.', 'error'); return; }
+            link.title = nt;
+            link.url = normalizeUrl(nu);
+            if (!link.url) { showToast('Please enter a valid http(s) URL.', 'error'); return; }
+            link.notes = nn;
+            link.category = nc;
+            link.editedAt = new Date().toISOString();
+            saveLinks(); buildCategoryList(); renderLinks();
+            closeModal('edit-modal');
+            showToast('✏️ "' + escHtml(link.title) + '" updated!', 'success');
+        }
+        function visitLink(id, url) {
+            const link = links.find(l => l.id === id);
+            if (link) { link.visitCount = (link.visitCount || 0) + 1; saveLinks(); }
+            const su = normalizeUrl(url); if (!su) return;
+            try {
+                const p = new URL(su);
+                if (p.protocol === 'http:' || p.protocol === 'https:')
+                    window.open(su, '_blank', 'noopener,noreferrer');
+            } catch { }
+        }
+
+        /* ================================================================
+           BULK SELECTION
+        ================================================================ */
+        function toggleSelect(id) { if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); updateBulkBar(); renderLinks(); }
+        function bulkDeselect() { selectedIds.clear(); updateBulkBar(); renderLinks(); }
+        function updateBulkBar() {
+            const bar = document.getElementById('bulk-bar');
+            const lbl = document.getElementById('bulk-count-label');
+            const n = selectedIds.size;
+            if (n > 0) {
+                bar.classList.add('active');
+                lbl.textContent = n + ' link' + (n !== 1 ? 's' : '') + ' selected';
+            } else {
+                bar.classList.remove('active');
+            }
+        }
+        function bulkDelete() {
+            const n = selectedIds.size; if (!n) return;
+            const titles = [...selectedIds].map(id => links.find(l => l.id === id)?.title).filter(Boolean);
+            document.getElementById('bulk-delete-body').innerHTML =
+                'You are about to permanently delete <strong>' + n + ' link' + (n !== 1 ? 's' : '') + '</strong>:<br><br>'
+                + '<span style="color:var(--text2);font-size:.82rem;line-height:1.8">' + titles.map(t => '&bull; ' + escHtml(t)).join('<br>') + '</span><br><br>This cannot be undone.';
+            document.getElementById('bulk-delete-confirm-btn').onclick = () => {
+                links = links.filter(l => !selectedIds.has(l.id));
+                selectedIds.clear();
+                saveLinks(); buildCategoryList(); renderLinks(); updateBulkBar();
+                closeModal('bulk-delete-modal');
+                showToast('🗑 ' + n + ' link' + (n !== 1 ? 's' : '') + ' deleted.', 'info');
+            };
+            openModal('bulk-delete-modal');
+        }
+        function bulkExport() {
+            const sel = links.filter(l => selectedIds.has(l.id));
+            const ts = getExportTimestamp();
+            const blob = new Blob(
+                [JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), links: sel, categories }, null, 2)],
+                { type: 'application/json' }
+            );
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'linkvault-selected-' + ts + '.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('📦 ' + sel.length + ' link' + (sel.length !== 1 ? 's' : '') + ' exported!', 'success');
+        }
+
+        /* ================================================================
+           SEARCH & SORT
+           onSearch uses a debounced wrapper so the full DOM is not rebuilt
+           on every single keystroke — improves performance on large vaults.
+        ================================================================ */
+        const _debouncedRender = debounce(renderLinks, 250);
+
+        function onSearch(input) {
+            document.getElementById('clear-search-btn').style.display = input.value ? 'flex' : 'none';
+            _debouncedRender();
+        }
+        function clearSearch() {
+            const inp = document.getElementById('search-input');
+            inp.value = '';
+            document.getElementById('clear-search-btn').style.display = 'none';
+            inp.focus();
+            renderLinks(); // immediate render on explicit clear
+        }
+        function getFilteredLinks() {
+            const q = document.getElementById('search-input').value.toLowerCase().trim();
+            const s = document.getElementById('sort-select').value;
+            let r = links.filter(l => {
+                const mc = activeCategory === 'all'
+                    || (activeCategory === '__pinned__' ? l.pinned : l.category === activeCategory);
+                const mq = !q
+                    || l.title.toLowerCase().includes(q)
+                    || (l.notes && l.notes.toLowerCase().includes(q))
+                    || (l.url && l.url.toLowerCase().includes(q));
+                return mc && mq;
+            });
+            if (s === 'newest') r.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            else if (s === 'oldest') r.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            else if (s === 'az') r.sort((a, b) => a.title.localeCompare(b.title));
+            else if (s === 'za') r.sort((a, b) => b.title.localeCompare(a.title));
+            else if (s === 'mostvisited') r.sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
+            else if (s === 'pinned') r.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+            return r;
+        }
+
+        /* ================================================================
+           RENDER
+           ── SECURITY: all onclick handlers that pass a record ID now use
+              data-* attributes and read them back with this.dataset.<name>.
+              This means the ID is never interpolated inside a JS string
+              literal, eliminating any JS-injection risk from crafted IDs.
+        ================================================================ */
+        function highlight(text, query) {
+            if (!query) return escHtml(text);
+            const s = escHtml(text);
+            const re = new RegExp('(' + escRegex(escHtml(query)) + ')', 'gi');
+            return s.replace(re, '<mark>$1</mark>');
+        }
+        function getCatInfo(catId) { return categories.find(c => c.id === catId) || { label: catId || 'Unknown', icon: '📎' }; }
+        function formatDate(iso) {
+            if (!iso) return '&mdash;';
+            let str = String(iso).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(str)) str += 'T00:00:00';
+            const d = new Date(str);
+            if (isNaN(d.getTime())) return '&mdash;';
+            const day = String(d.getDate()).padStart(2, '0');
+            const mon = String(d.getMonth() + 1).padStart(2, '0');
+            const yr = d.getFullYear();
+            const h24 = d.getHours();
+            const h12 = h24 % 12 || 12;
+            const mins = String(d.getMinutes()).padStart(2, '0');
+            const ap = h24 >= 12 ? 'PM' : 'AM';
+            return day + '/' + mon + '/' + yr + ', ' + h12 + ':' + mins + ' ' + ap;
+        }
+        function renderLinks() {
+            const q = document.getElementById('search-input').value.toLowerCase().trim();
+            const result = getFilteredLinks();
+            const grid = document.getElementById('links-grid');
+            const info = document.getElementById('results-info');
+            const cl = activeCategory === 'all' ? 'All Links'
+                : activeCategory === '__pinned__' ? '📌 Pinned'
+                    : getCatInfo(activeCategory).label;
+            info.innerHTML =
+                '<span><b>' + result.length + '</b> link' + (result.length !== 1 ? 's' : '') + ' in <b>' + escHtml(cl) + '</b>'
+                + (q ? ' matching &ldquo;<b>' + escHtml(q) + '</b>&rdquo;' : '') + '  </span>'
+                + '<span style="font-size:.7rem">'
+                + (selectedIds.size > 0 ? '<span style="color:var(--accent2)">' + selectedIds.size + ' selected</span>' : '')
+                + '</span>';
+
+            if (!result.length) {
+                grid.innerHTML =
+                    '<div class="empty-state" role="listitem">'
+                    + '<div class="empty-icon" aria-hidden="true">' + (q ? '🔍' : '🔗') + '</div>'
+                    + '<div class="empty-title">' + (q ? 'No results found' : 'No links yet') + '</div>'
+                    + '<div class="empty-sub">'
+                    + (q ? 'No links match &ldquo;' + escHtml(q) + '&rdquo;. Try a different search.'
+                        : 'Add your first link using the form above!')
+                    + '</div></div>';
+                return;
+            }
+
+            grid.innerHTML = result.map(link => {
+                const cat = getCatInfo(link.category);
+                const title = highlight(link.title, q);
+                const notes = link.notes ? highlight(link.notes, q) : '';
+                const isSel = selectedIds.has(link.id);
+                const v = link.visitCount || 0;
+                const lid = escHtml(link.id);
+                const lurl = escHtml(link.url);
+
+                /* Favicon: try Google S2 (root domain), fall back to letter avatar */
+                const _host = getHostname(link.url);
+                const _rdomain = getRootDomainFromHostname(_host);
+                let av;
+                if (_rdomain) {
+                    const _fsrc = 'https://www.google.com/s2/favicons?sz=64&domain=' + encodeURIComponent(_rdomain);
+                    av = '<img src="' + escHtml(_fsrc) + '" alt=""'
+                        + ' data-url="' + lurl + '"'
+                        + ' style="width:100%;height:100%;object-fit:cover;border-radius:7px;display:block"'
+                        + ' onerror="faviconError(this)" >';
+                } else {
+                    av = generateLetterAvatar(link.url);
+                }
+
+                return '<div class="link-card' + (link.pinned ? ' pinned' : '') + (isSel ? ' selected' : '') + '" role="listitem">'
+                    + '<div class="link-card-top">'
+                    + '<div class="link-favicon" aria-hidden="true">' + av + '</div>'
+                    + '<div class="link-meta">'
+                    + '<div class="link-title" title="' + escHtml(link.title) + '">' + title + '</div>'
+                    + '<div class="link-url">' + escHtml(link.url) + '</div>'
+                    + (notes ? '<div style="font-size:.75rem;color:var(--text2);margin-top:4px;line-height:1.4">' + notes + '</div>' : '')
+                    + '</div></div>'
+                    + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+                    + '<span class="link-category">'
+                    + '<span class="cat-dot" style="background:' + catColor(link.category) + '"></span>'
+                    + escHtml(cat.icon + ' ' + cat.label)
+                    + '</span>'
+                    + '<span class="visit-badge' + (v > 0 ? ' has-visits' : '') + '" aria-label="' + v + ' visit' + (v !== 1 ? 's' : '') + '">'
+                    + '&#128065; ' + v + ' visit' + (v !== 1 ? 's' : '') + '</span>'
+                    + (link.editedAt ? '<span style="font-size:.68rem;color:var(--text3);font-family:\'Space Mono\',monospace" aria-label="edited">&#9999;&#65039; edited</span>' : '')
+                    + '</div>'
+                    + '<div class="link-footer">'
+                    + '<span class="link-date">&#128197; ' + formatDate(link.createdAt) + '</span>'
+                    + '<div class="link-actions" role="group" aria-label="Actions for ' + escHtml(link.title) + '">'
+                    /* Visit — data-id + data-url already present; onclick uses dataset */
+                    + '<button class="link-action-btn btn-visit" type="button"'
+                    + ' data-id="' + lid + '" data-url="' + lurl + '"'
+                    + ' onclick="visitLink(this.dataset.id,this.dataset.url)"'
+                    + ' aria-label="Visit ' + escHtml(link.title) + '">&#8599; Visit</button>'
+                    /* Copy */
+                    + '<button class="link-action-btn btn-copy" type="button"'
+                    + ' data-url="' + lurl + '"'
+                    + ' onclick="copyLink(this.dataset.url)"'
+                    + ' aria-label="Copy URL">📋 Copy</button>'
+                    /* Edit — uses data-id + dataset.id */
+                    + '<button class="link-action-btn btn-edit" type="button"'
+                    + ' data-id="' + lid + '"'
+                    + ' onclick="openEditModal(this.dataset.id)"'
+                    + ' aria-label="Edit ' + escHtml(link.title) + '">&#9999;&#65039;</button>'
+                    /* Pin — uses data-id + dataset.id */
+                    + '<button class="link-action-btn btn-pin' + (link.pinned ? ' pinned' : '') + '" type="button"'
+                    + ' data-id="' + lid + '"'
+                    + ' onclick="togglePin(this.dataset.id)"'
+                    + ' aria-pressed="' + link.pinned + '"'
+                    + ' aria-label="' + (link.pinned ? 'Unpin' : 'Pin') + ' ' + escHtml(link.title) + '">'
+                    + (link.pinned ? '&#128204;' : '&#128205;') + '</button>'
+                    /* Select — uses data-id + dataset.id */
+                    + '<button class="link-action-btn btn-select' + (isSel ? ' selected' : '') + '" type="button"'
+                    + ' data-id="' + lid + '"'
+                    + ' onclick="toggleSelect(this.dataset.id)"'
+                    + ' aria-pressed="' + isSel + '"'
+                    + ' aria-label="' + (isSel ? 'Deselect' : 'Select') + ' ' + escHtml(link.title) + '">&#10003;</button>'
+                    /* Delete — uses data-id + dataset.id */
+                    + '<button class="link-action-btn btn-del" type="button"'
+                    + ' data-id="' + lid + '"'
+                    + ' onclick="confirmDelete(this.dataset.id)"'
+                    + ' aria-label="Delete ' + escHtml(link.title) + '">&#128465;</button>'
+                    + '</div></div></div>';
+            }).join('');
+        }
+
+        const CC = ['#00e5ff', '#7c5cff', '#ff4f7b', '#00e096', '#ffb547', '#a78bfa', '#34d399', '#f87171', '#60a5fa', '#fbbf24'];
+        function catColor(id) { const i = (categories.findIndex(c => c.id === id) + 1) * 137 % CC.length; return CC[i] || '#7c5cff'; }
+
+        /* ================================================================
+           CLIPBOARD / EXPORT / IMPORT
+        ================================================================ */
+        function copyLink(url) {
+            const su = normalizeUrl(url); if (!su) { showToast('Invalid URL.', 'error'); return; }
+            if (navigator.clipboard && window.isSecureContext)
+                navigator.clipboard.writeText(su)
+                    .then(() => showToast('Link copied! ⎘', 'success'))
+                    .catch(() => prompt('Copy:', su));
+            else
+                prompt('Copy:', su);
+        }
+
+        /* ── FIX: export filename now includes full date + time ──────────
+           Format: linkvault-export-DD-MM-YYYY_HH-MM-AM.json
+        ─────────────────────────────────────────────────────────────── */
+        function exportData() {
+            const ts = getExportTimestamp();
+            const blob = new Blob(
+                [JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), links, categories }, null, 2)],
+                { type: 'application/json' }
+            );
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'linkvault-export-' + ts + '.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('Export downloaded! 📦', 'success');
+        }
+
+        function openImportModal() { document.getElementById('import-textarea').value = ''; openModal('import-modal'); }
+
+        /* ── SECURITY improvements in importData ─────────────────────────
+           1. Hard size cap (5 MB) to prevent memory exhaustion from huge
+              payloads.
+           2. Link batch cap (10 000) as a secondary safeguard.
+           3. Category IDs are sanitized with the same regex used in
+              loadData() before being stored.
+           4. Link IDs are sanitized with _SAFE_LINK_ID before being stored.
+        ─────────────────────────────────────────────────────────────── */
+        function importData() {
+            try {
+                const raw = document.getElementById('import-textarea').value.trim();
+
+                /* Guard 1: size cap */
+                if (raw.length > 5 * 1024 * 1024) {
+                    showToast('Import data too large (max 5 MB).', 'error');
+                    return;
+                }
+
+                const data = JSON.parse(raw);
+                let added = 0;
+                if (typeof data !== 'object' || data === null) throw new Error('Not an object');
+
+                if (data.categories && Array.isArray(data.categories)) {
+                    data.categories.forEach(c => {
+                        if (typeof c.id !== 'string' || typeof c.label !== 'string') return;
+                        /* Sanitize imported category ID */
+                        const si = String(c.id).trim().toLowerCase().replace(/\s+/g, '-').replace(_SAFE_CAT_ID, '').slice(0, 50);
+                        const sl = String(c.label).trim().slice(0, 50);
+                        if (!si || categories.find(x => x.id === si)) return;
+                        categories.push({ id: si, label: sl, icon: typeof c.icon === 'string' ? c.icon.slice(0, 10) : '🏷️' });
+                    });
+                    saveCats();
+                }
+
+                if (data.links && Array.isArray(data.links)) {
+                    /* Guard 2: link count cap */
+                    const importBatch = data.links.slice(0, 10000);
+                    const ex = new Set(links.map(l => l.id));
+                    importBatch.forEach(l => {
+                        if (typeof l.id !== 'string' || typeof l.title !== 'string' || typeof l.url !== 'string') return;
+                        const su = normalizeUrl(l.url); if (!su) return;
+                        /* Sanitize imported link ID */
+                        const si = String(l.id).trim().replace(_SAFE_LINK_ID, '').slice(0, 100);
+                        if (!si || ex.has(si)) return;
+                        links.push({
+                            id: si,
+                            title: String(l.title).trim().slice(0, 80),
+                            url: su.slice(0, 2000),
+                            category: typeof l.category === 'string' && l.category.trim() ? l.category.trim().slice(0, 50) : 'other',
+                            notes: typeof l.notes === 'string' ? l.notes.trim().slice(0, 120) : '',
+                            createdAt: typeof l.createdAt === 'string' ? l.createdAt : new Date().toISOString(),
+                            editedAt: typeof l.editedAt === 'string' ? l.editedAt : undefined,
+                            pinned: Boolean(l.pinned),
+                            visitCount: Number.isFinite(l.visitCount) ? l.visitCount : 0
+                        });
+                        added++;
+                    });
+                    saveLinks();
+                }
+
+                loadData().then(() => { buildCategoryOptions(); buildCategoryList(); renderLinks(); });
+                closeModal('import-modal');
+                showToast('Imported ' + added + ' new link(s)! 🎉', 'success');
+            } catch {
+                showToast('Invalid JSON. Please check and try again.', 'error');
+            }
+        }
+
+        /* ================================================================
+           MODALS
+        ================================================================ */
+        function openModal(id) { const el = document.getElementById(id); if (!el) return; el.classList.add('open'); const f = el.querySelector('button,input,textarea,select,[tabindex]'); if (f) setTimeout(() => f.focus(), 50); }
+        function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); }
+        document.querySelectorAll('.modal-overlay').forEach(el => {
+            el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+        });
+
+        /* ================================================================
+           TOAST
+        ================================================================ */
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = 'toast toast-' + type;
+            const ic = document.createElement('span');
+            ic.textContent = { success: '✅', error: '❌', info: 'ℹ️' }[type] || 'ℹ️';
+            el.appendChild(ic);
+            el.appendChild(document.createTextNode(' ' + msg));
+            c.appendChild(el);
+            setTimeout(() => { el.classList.add('removing'); setTimeout(() => el.remove(), 280); }, 3000);
+        }
+
+        /* ================================================================
+           SHAKE
+        ================================================================ */
+        function shakeField(id) {
+            const el = document.getElementById(id); if (!el) return;
+            el.style.animation = 'none';
+            el.style.borderColor = 'var(--danger)';
+            el.offsetHeight; // reflow
+            el.style.animation = 'shake .4s ease';
+            setTimeout(() => { el.style.animation = ''; el.style.borderColor = ''; }, 500);
+        }
+        const _ss = document.createElement('style');
+        _ss.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
+        document.head.appendChild(_ss);
+
+        /* ================================================================
+           MOBILE SIDEBAR
+        ================================================================ */
+        document.getElementById('sidebar-toggle-btn').addEventListener('click', () => {
+            const s = document.getElementById('sidebar');
+            const o = document.getElementById('sidebar-overlay');
+            const b = document.getElementById('sidebar-toggle-btn');
+            const open = s.classList.toggle('open');
+            o.classList.toggle('open', open);
+            b.setAttribute('aria-expanded', String(open));
+        });
+        document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').classList.remove('open');
+            document.getElementById('sidebar-toggle-btn').setAttribute('aria-expanded', 'false');
+        }
+
+        /* ================================================================
+           KEYBOARD SHORTCUTS
+        ================================================================ */
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+                closeSidebar();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('search-input').focus(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { if (document.activeElement.closest('.add-card')) promptAddLink(); }
+        });
+
+        /* ================================================================
+           UTILS
+        ================================================================ */
+        function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+        function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+        /* ================================================================
+           INIT  — async, waits for IndexedDB before first render
+        ================================================================ */
+        async function init() {
+            try { await _openDB(); await _migrateFromLocalStorage(); await loadData(); }
+            catch (e) { console.error('LinkVault: DB init error', e); }
+            buildCategoryOptions(); buildCategoryList(); renderLinks();
+            document.getElementById('db-loading').style.display = 'none';
+            document.getElementById('app-wrapper').style.display = '';
+        }
+        init();
+
+    </script>
+</body>
+
+</html>
