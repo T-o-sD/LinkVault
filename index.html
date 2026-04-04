@@ -10,9 +10,10 @@
          • img-src https: data: blob:  : Google S2 favicons + data/blob URIs
          • connect-src 'self'          : IndexedDB is local — no XHR/fetch
          • object-src / form-action    : locked down to prevent plugin/form abuse
+         • worker-src 'none'           : disable web workers (not used)
     ──────────────────────────────────────────────────────────────────────── -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https: data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none';">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src https: data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; worker-src 'none';">
     <title>LinkVault - Share &amp; Discover Links</title>
     <link rel="icon" href="data:,">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,6 +21,9 @@
         href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <style>
+        /* =====================================================================
+           CSS IS IDENTICAL TO ORIGINAL — PASTE YOUR ORIGINAL <style> BLOCK HERE
+           ===================================================================== */
         :root {
             --bg: #0a0a0f;
             --surface: #111118;
@@ -1114,6 +1118,15 @@
             background: #ff2060
         }
 
+        .btn-confirm:disabled {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        .btn-confirm:disabled:hover {
+            background: var(--danger)
+        }
+
         .btn-primary {
             padding: 9px 18px;
             border-radius: var(--radius-sm);
@@ -1172,6 +1185,114 @@
         .confirm-val.notes {
             color: var(--text2);
             font-style: italic
+        }
+
+        /* ── NEW: delete-type-guard styling ── */
+        .delete-type-guard {
+            margin: 0 0 20px;
+            padding: 14px 16px;
+            background: rgba(255, 79, 123, .06);
+            border: 1px solid rgba(255, 79, 123, .22);
+            border-radius: var(--radius-sm)
+        }
+
+        .delete-type-guard label {
+            display: block;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: .8px;
+            color: var(--text3);
+            text-transform: uppercase;
+            margin-bottom: 8px
+        }
+
+        .delete-type-guard strong {
+            color: var(--danger);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 1px
+        }
+
+        .delete-type-input {
+            width: 100%;
+            background: var(--surface3);
+            border: 1px solid rgba(255, 79, 123, .25);
+            color: var(--text);
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            font-family: 'Space Mono', monospace;
+            outline: none;
+            transition: var(--trans)
+        }
+
+        .delete-type-input:focus {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(255, 79, 123, .1)
+        }
+
+        .delete-type-input::placeholder {
+            color: var(--text3);
+            font-family: 'Outfit', sans-serif;
+            font-size: .85rem
+        }
+
+        /* ── NEW: file input styling ── */
+        .file-input-wrap {
+            position: relative;
+            margin-bottom: 10px
+        }
+
+        .file-input-styled {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px dashed var(--border2);
+            color: var(--text2);
+            padding: 20px 16px;
+            border-radius: var(--radius-sm);
+            font-size: .85rem;
+            cursor: pointer;
+            outline: none;
+            transition: var(--trans);
+            display: block
+        }
+
+        .file-input-styled:hover,
+        .file-input-styled:focus {
+            border-color: var(--accent);
+            color: var(--text)
+        }
+
+        .file-drop-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none
+        }
+
+        .file-drop-hint .drop-icon {
+            font-size: 1.8rem;
+            opacity: .5
+        }
+
+        .file-drop-hint .drop-text {
+            font-size: .82rem;
+            color: var(--text3)
+        }
+
+        .file-drop-hint .drop-sub {
+            font-size: .72rem;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace
+        }
+
+        #import-file-real {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%
         }
 
         .import-label {
@@ -1562,6 +1683,8 @@
     </div>
 
     <div id="toast-container" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+    <!-- ── Add Confirm Modal (unchanged) ── -->
     <div class="modal-overlay" id="add-confirm-modal" role="dialog" aria-modal="true"
         aria-labelledby="add-confirm-title">
         <div class="modal">
@@ -1573,48 +1696,113 @@
                     type="button">&#9989; Save Link</button></div>
         </div>
     </div>
+
+    <!-- ── NEW: Edit Confirm Modal ── -->
+    <div class="modal-overlay" id="edit-confirm-modal" role="dialog" aria-modal="true"
+        aria-labelledby="edit-confirm-title">
+        <div class="modal">
+            <div class="modal-title" id="edit-confirm-title">&#9889; Confirm Edit</div>
+            <div class="modal-body">Review the updated details below before saving changes to your vault.</div>
+            <div class="confirm-preview" id="edit-preview-box"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="backToEdit()" type="button">&#8592; Back to Edit</button>
+                <button class="btn-primary" onclick="confirmAndSaveEdit()" type="button">&#128190; Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Delete Modal — now requires typing DELETE ── -->
     <div class="modal-overlay" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
         <div class="modal">
             <div class="modal-title" id="delete-modal-title">&#128465; Delete Link?</div>
             <div class="modal-body" id="delete-modal-body">Are you sure you want to delete this link? This cannot be
                 undone.</div>
-            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('delete-modal')"
-                    type="button">Cancel</button><button class="btn-confirm" id="delete-confirm-btn"
-                    type="button">Delete</button></div>
+            <!-- DELETE type-guard -->
+            <div class="delete-type-guard">
+                <label for="type-input-delete">Type <strong>DELETE</strong> to confirm</label>
+                <input type="text" id="type-input-delete" class="delete-type-input"
+                    placeholder="Type DELETE here&hellip;" autocomplete="off" spellcheck="false"
+                    aria-label="Type DELETE to confirm deletion">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('delete-modal')" type="button">Cancel</button>
+                <button class="btn-confirm" id="delete-confirm-btn" type="button" disabled>Delete</button>
+            </div>
         </div>
     </div>
+
+    <!-- ── Clear All Modal — now requires typing DELETE ── -->
     <div class="modal-overlay" id="clear-modal" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
         <div class="modal">
             <div class="modal-title" id="clear-modal-title">&#9888;&#65039; Clear All Links?</div>
             <div class="modal-body">This will permanently delete <strong id="clear-count">all</strong> links in the
                 current view. This cannot be undone.</div>
-            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('clear-modal')"
-                    type="button">Cancel</button><button class="btn-confirm" id="clear-confirm-btn" type="button">Clear
-                    All</button></div>
+            <!-- DELETE type-guard -->
+            <div class="delete-type-guard">
+                <label for="type-input-clear">Type <strong>DELETE</strong> to confirm</label>
+                <input type="text" id="type-input-clear" class="delete-type-input"
+                    placeholder="Type DELETE here&hellip;" autocomplete="off" spellcheck="false"
+                    aria-label="Type DELETE to confirm clearing all links">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('clear-modal')" type="button">Cancel</button>
+                <button class="btn-confirm" id="clear-confirm-btn" type="button" disabled>Clear All</button>
+            </div>
         </div>
     </div>
+
+    <!-- ── Import Modal — now uses file input ── -->
     <div class="modal-overlay" id="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
         <div class="modal">
             <div class="modal-title" id="import-modal-title">&#8595; Import Links</div>
-            <div class="modal-body">Paste exported JSON data below. Existing links will be merged (duplicates skipped).
-            </div><label for="import-textarea" class="import-label">JSON Import Data</label><textarea
-                class="data-textarea" id="import-textarea" name="import-textarea" placeholder="Paste JSON here&hellip;"
-                aria-label="JSON import data" spellcheck="false"></textarea>
-            <div class="modal-actions" style="margin-top:14px"><button class="btn-cancel"
-                    onclick="closeModal('import-modal')" type="button">Cancel</button><button class="btn-confirm"
-                    style="background:var(--accent2)" onclick="importData()" type="button">Import</button></div>
+            <div class="modal-body">Select a previously exported LinkVault <strong>.json</strong> backup file.
+                Existing links will be merged — duplicates skipped.</div>
+            <label class="import-label" for="import-file-real">Select Backup File (.json)</label>
+            <!-- Custom file input with drop-zone style -->
+            <div class="file-input-wrap">
+                <div class="file-input-styled" id="file-drop-zone" role="button" tabindex="0"
+                    aria-label="Click or drag to select a JSON backup file">
+                    <div class="file-drop-hint">
+                        <span class="drop-icon" aria-hidden="true">&#128196;</span>
+                        <span class="drop-text" id="file-drop-text">Click to select a .json file</span>
+                        <span class="drop-sub">or drag &amp; drop here</span>
+                    </div>
+                </div>
+                <input type="file" id="import-file-real" accept=".json,application/json"
+                    onchange="onImportFileSelected(this)" aria-label="Select JSON backup file">
+            </div>
+            <div id="import-file-info"
+                style="font-size:.72rem;color:var(--text3);margin-bottom:14px;font-family:'Space Mono',monospace;min-height:1.2em">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('import-modal')" type="button">Cancel</button>
+                <button class="btn-confirm" style="background:var(--accent2)" onclick="importData()"
+                    type="button">Import</button>
+            </div>
         </div>
     </div>
+
+    <!-- ── Delete Category Modal — now requires typing DELETE ── -->
     <div class="modal-overlay" id="delcat-modal" role="dialog" aria-modal="true" aria-labelledby="delcat-modal-title">
         <div class="modal">
             <div class="modal-title" id="delcat-modal-title">&#128465; Delete Category?</div>
             <div class="modal-body" id="delcat-modal-body">Deleting this category will reassign all its links to
                 &ldquo;Other&rdquo;. Continue?</div>
-            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('delcat-modal')"
-                    type="button">Cancel</button><button class="btn-confirm" id="delcat-confirm-btn"
-                    type="button">Delete</button></div>
+            <!-- DELETE type-guard -->
+            <div class="delete-type-guard">
+                <label for="type-input-delcat">Type <strong>DELETE</strong> to confirm</label>
+                <input type="text" id="type-input-delcat" class="delete-type-input"
+                    placeholder="Type DELETE here&hellip;" autocomplete="off" spellcheck="false"
+                    aria-label="Type DELETE to confirm category deletion">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('delcat-modal')" type="button">Cancel</button>
+                <button class="btn-confirm" id="delcat-confirm-btn" type="button" disabled>Delete</button>
+            </div>
         </div>
     </div>
+
+    <!-- ── Edit Modal (unchanged structure) ── -->
     <div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
         <div class="modal">
             <div class="modal-title" id="edit-modal-title">&#9999;&#65039; Edit Link</div>
@@ -1630,18 +1818,29 @@
                         id="edit-category" name="edit-category"></select></div>
             </div>
             <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('edit-modal')"
-                    type="button">Cancel</button><button class="btn-primary" onclick="saveEdit()"
-                    type="button">&#128190; Save Changes</button></div>
+                    type="button">Cancel</button><button class="btn-primary" onclick="saveEdit()" type="button">&#9889;
+                    Review &amp; Save</button></div>
         </div>
     </div>
+
+    <!-- ── Bulk Delete Modal — now requires typing DELETE ── -->
     <div class="modal-overlay" id="bulk-delete-modal" role="dialog" aria-modal="true"
         aria-labelledby="bulk-delete-title">
         <div class="modal">
             <div class="modal-title" id="bulk-delete-title">&#128465; Delete Selected Links?</div>
             <div class="modal-body" id="bulk-delete-body">This will permanently delete the selected links.</div>
-            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('bulk-delete-modal')"
-                    type="button">Cancel</button><button class="btn-confirm" id="bulk-delete-confirm-btn"
-                    type="button">Delete All Selected</button></div>
+            <!-- DELETE type-guard -->
+            <div class="delete-type-guard">
+                <label for="type-input-bulk-delete">Type <strong>DELETE</strong> to confirm</label>
+                <input type="text" id="type-input-bulk-delete" class="delete-type-input"
+                    placeholder="Type DELETE here&hellip;" autocomplete="off" spellcheck="false"
+                    aria-label="Type DELETE to confirm bulk deletion">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('bulk-delete-modal')" type="button">Cancel</button>
+                <button class="btn-confirm" id="bulk-delete-confirm-btn" type="button" disabled>Delete All
+                    Selected</button>
+            </div>
         </div>
     </div>
 
@@ -1650,8 +1849,6 @@
 
         /* ================================================================
            UTILITY — debounce
-           Used to rate-limit the search handler so the DOM is not rebuilt
-           on every single keystroke.
         ================================================================ */
         function debounce(fn, ms) {
             let t;
@@ -1664,10 +1861,6 @@
 
         /* ================================================================
            UTILITY — export timestamp
-           Produces a filename-safe date+time string in the format
-           DD-MM-YYYY_HH-MM-AM/PM  (e.g. 03-04-2026_11-56-AM)
-           Slashes, colons and spaces are replaced with hyphens/underscores
-           so the string is valid on Windows, macOS and Linux.
         ================================================================ */
         function getExportTimestamp() {
             const d = new Date();
@@ -1682,9 +1875,7 @@
         }
 
         /* ================================================================
-           INDEXED DB LAYER  (replaces localStorage)
-           - Identical key names so existing exports/imports still work
-           - One-time migration copies localStorage data on first launch
+           INDEXED DB LAYER
         ================================================================ */
         const DB_NAME = 'LinkVaultDB';
         const DB_VERSION = 1;
@@ -1754,9 +1945,7 @@
             { id: 'other', label: 'Other', icon: '📎' },
         ];
 
-        /* ── SECURITY: regex used to sanitize category IDs ── */
         const _SAFE_CAT_ID = /[^a-z0-9-]/g;
-        /* ── SECURITY: regex used to sanitize link IDs ── */
         const _SAFE_LINK_ID = /[^a-zA-Z0-9_.\-]/g;
 
         let links = [];
@@ -1767,6 +1956,7 @@
         let editPendingId = null;
         let selectedIds = new Set();
         let pendingAddPayload = null;
+        let pendingEditPayload = null;   // NEW: holds data between edit-modal and edit-confirm-modal
 
         async function loadData() {
             try { links = (await _idbGet(STORAGE_KEY_LINKS)) || []; } catch { links = []; }
@@ -1774,11 +1964,6 @@
 
             if (!Array.isArray(categories) || !categories.length) categories = DEFAULT_CATS.slice();
 
-            /* ── SECURITY: sanitize category IDs on load ─────────────────────
-               Category IDs must only contain lowercase letters, digits and
-               hyphens so they are safe to embed in data-* attributes and
-               to use as argument values in onclick handlers via dataset reads.
-            ─────────────────────────────────────────────────────────────── */
             categories = categories
                 .filter(c => c && typeof c.id === 'string' && typeof c.label === 'string')
                 .map(c => ({
@@ -1786,9 +1971,8 @@
                     label: String(c.label).slice(0, 50),
                     icon: typeof c.icon === 'string' ? c.icon.slice(0, 10) : '🏷️'
                 }))
-                .filter(c => c.id); // drop entries whose ID became empty after sanitisation
+                .filter(c => c.id);
 
-            /* Deduplicate by ID (sanitisation may collapse two IDs into one) */
             const _seenCatIds = new Set();
             categories = categories.filter(c => {
                 if (_seenCatIds.has(c.id)) return false;
@@ -1799,10 +1983,6 @@
             if (!categories.some(c => c.id === 'other'))
                 categories.push({ id: 'other', label: 'Other', icon: '📎' });
 
-            /* ── SECURITY: sanitize link IDs on load ─────────────────────────
-               Link IDs must only contain alphanumeric chars, underscores, dots
-               and hyphens to be safe in data-* attributes.
-            ─────────────────────────────────────────────────────────────── */
             links = Array.isArray(links) ? links : [];
             links = links
                 .filter(l => l && typeof l.id === 'string' && typeof l.title === 'string' && typeof l.url === 'string')
@@ -1830,7 +2010,6 @@
             });
         }
 
-        /* Fire-and-forget — callers stay synchronous */
         function saveLinks() { _idbSet(STORAGE_KEY_LINKS, links).catch(e => console.error('saveLinks', e)); }
         function saveCats() { _idbSet(STORAGE_KEY_CATS, categories).catch(e => console.error('saveCats', e)); }
 
@@ -1867,7 +2046,6 @@
             return '<div class="letter-avatar" style="background:' + color + '22;color:' + color + '" aria-hidden="true">' + escHtml(letter) + '</div>';
         }
 
-        /* Legacy compatibility — preserved but unused in render path */
         function getFavicon(url) { try { const h = getHostname(url), r = getRootDomainFromHostname(h); return r ? 'https://www.google.com/s2/favicons?sz=64&domain=' + encodeURIComponent(r) : null; } catch { return null; } }
         function getFaviconSources(url) { const s = getFavicon(url); return s ? [s] : []; }
         function faviconError(img) { const p = img && img.parentElement; if (p) p.innerHTML = generateLetterAvatar((img.dataset && img.dataset.url) || ''); }
@@ -1881,10 +2059,6 @@
                 categories.map(c => '<option value="' + escHtml(c.id) + '">' + escHtml(c.icon + ' ' + c.label) + '</option>').join('');
         }
 
-        /* ── SECURITY: onclick uses this.dataset.cat (data attribute read)
-           instead of embedding the ID directly inside the JS string literal.
-           This eliminates any risk of JS injection through crafted category IDs.
-        ── */
         function buildCategoryList() {
             document.getElementById('category-list').innerHTML = categories.map(c => {
                 const cnt = links.filter(l => l.category === c.id).length;
@@ -1952,6 +2126,8 @@
             document.getElementById('new-cat-toggle-btn').setAttribute('aria-expanded', 'false');
             showToast('Category "' + escHtml(name) + '" added! 🏷️', 'success');
         }
+
+        /* ── MODIFIED: openDelCatModal now uses type-DELETE guard ── */
         function openDelCatModal(catId) {
             deleteCatPending = catId;
             const cat = categories.find(c => c.id === catId);
@@ -1968,6 +2144,7 @@
                 closeModal('delcat-modal');
                 showToast('Category "' + escHtml(cat?.label || catId) + '" deleted.', 'info');
             };
+            _guardDeleteBtn('type-input-delcat', 'delcat-confirm-btn');
             openModal('delcat-modal');
         }
 
@@ -2021,8 +2198,30 @@
         }
 
         /* ================================================================
-           DELETE
+           DELETE — all delete paths now require typing DELETE
         ================================================================ */
+
+        /* ── HELPER: set up type-DELETE guard on a modal's confirm button ── */
+        function _guardDeleteBtn(inputId, btnId) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            // Disable confirm button immediately
+            btn.disabled = true;
+
+            // Reset input and swap node to clear any stale event listeners
+            const oldInput = document.getElementById(inputId);
+            if (!oldInput) return;
+            oldInput.value = '';
+            const freshInput = oldInput.cloneNode(true);
+            oldInput.parentNode.replaceChild(freshInput, oldInput);
+
+            freshInput.addEventListener('input', function () {
+                const ok = (this.value === 'DELETE');
+                btn.disabled = !ok;
+            });
+        }
+
+        /* ── MODIFIED: confirmDelete now uses type-DELETE guard ── */
         function confirmDelete(id) {
             deletePendingId = id;
             const link = links.find(l => l.id === id);
@@ -2039,8 +2238,11 @@
                 closeModal('delete-modal');
                 showToast('Link deleted.', 'info');
             };
+            _guardDeleteBtn('type-input-delete', 'delete-confirm-btn');
             openModal('delete-modal');
         }
+
+        /* ── MODIFIED: openClearModal now uses type-DELETE guard ── */
         function openClearModal() {
             const visible = getFilteredLinks();
             document.getElementById('clear-count').textContent = visible.length + ' visible';
@@ -2052,6 +2254,7 @@
                 closeModal('clear-modal');
                 showToast('Links cleared.', 'info');
             };
+            _guardDeleteBtn('type-input-clear', 'clear-confirm-btn');
             openModal('clear-modal');
         }
 
@@ -2064,6 +2267,7 @@
             saveLinks(); buildCategoryList(); renderLinks();
             showToast(link.pinned ? '📌 "' + escHtml(link.title) + '" pinned!' : 'Unpinned "' + escHtml(link.title) + '".', 'info');
         }
+
         function openEditModal(id) {
             editPendingId = id;
             const link = links.find(l => l.id === id); if (!link) return;
@@ -2073,26 +2277,72 @@
             document.getElementById('edit-title').value = link.title;
             document.getElementById('edit-url').value = link.url;
             document.getElementById('edit-notes').value = link.notes || '';
+            pendingEditPayload = null; // clear any previous pending edit
             openModal('edit-modal');
         }
+
+        /* ── MODIFIED: saveEdit now routes through edit-confirm-modal ── */
         function saveEdit() {
             const link = links.find(l => l.id === editPendingId); if (!link) return;
             const nt = document.getElementById('edit-title').value.trim();
             const nu = document.getElementById('edit-url').value.trim();
             const nn = document.getElementById('edit-notes').value.trim();
             const nc = document.getElementById('edit-category').value;
+
             if (!nt) { showToast('Title cannot be empty.', 'error'); return; }
             if (!nu) { showToast('URL cannot be empty.', 'error'); return; }
-            link.title = nt;
-            link.url = normalizeUrl(nu);
-            if (!link.url) { showToast('Please enter a valid http(s) URL.', 'error'); return; }
-            link.notes = nn;
-            link.category = nc;
-            link.editedAt = new Date().toISOString();
-            saveLinks(); buildCategoryList(); renderLinks();
+            const finalUrl = normalizeUrl(nu);
+            if (!finalUrl) { showToast('Please enter a valid http(s) URL.', 'error'); return; }
+
+            // Validate category exists; fallback to 'other'
+            const safeCat = categories.find(c => c.id === nc) ? nc : 'other';
+            const cat = getCatInfo(safeCat);
+
+            // Store pending payload for confirmation step
+            pendingEditPayload = { id: editPendingId, title: nt, url: finalUrl, notes: nn, category: safeCat };
+
+            // Build preview identical to add-confirm style
+            document.getElementById('edit-preview-box').innerHTML =
+                '<div class="confirm-row"><span class="confirm-label">Title</span><span class="confirm-val">' + escHtml(nt) + '</span></div>'
+                + '<div class="confirm-row"><span class="confirm-label">URL</span><span class="confirm-val url">' + escHtml(finalUrl) + '</span></div>'
+                + '<div class="confirm-row"><span class="confirm-label">Category</span><span class="confirm-val">' + escHtml(cat.icon + ' ' + cat.label) + '</span></div>'
+                + (nn ? '<div class="confirm-row"><span class="confirm-label">Notes</span><span class="confirm-val notes">' + escHtml(nn) + '</span></div>' : '');
+
             closeModal('edit-modal');
+            openModal('edit-confirm-modal');
+        }
+
+        /* ── NEW: confirmAndSaveEdit — called from edit-confirm-modal ── */
+        function confirmAndSaveEdit() {
+            if (!pendingEditPayload) { closeModal('edit-confirm-modal'); return; }
+            const { id, title, url, notes, category } = pendingEditPayload;
+            const link = links.find(l => l.id === id);
+            if (!link) { closeModal('edit-confirm-modal'); return; }
+            link.title = title;
+            link.url = url;
+            link.notes = notes;
+            link.category = category;
+            link.editedAt = new Date().toISOString();
+            pendingEditPayload = null;
+            saveLinks(); buildCategoryList(); renderLinks();
+            closeModal('edit-confirm-modal');
             showToast('✏️ "' + escHtml(link.title) + '" updated!', 'success');
         }
+
+        /* ── NEW: backToEdit — restores edit-modal from pending payload ── */
+        function backToEdit() {
+            if (!pendingEditPayload) { closeModal('edit-confirm-modal'); return; }
+            const { title, url, notes, category } = pendingEditPayload;
+            document.getElementById('edit-title').value = title;
+            document.getElementById('edit-url').value = url;
+            document.getElementById('edit-notes').value = notes;
+            document.getElementById('edit-category').innerHTML =
+                categories.map(c => '<option value="' + escHtml(c.id) + '"' + (c.id === category ? ' selected' : '') + '>'
+                    + escHtml(c.icon + ' ' + c.label) + '</option>').join('');
+            closeModal('edit-confirm-modal');
+            openModal('edit-modal');
+        }
+
         function visitLink(id, url) {
             const link = links.find(l => l.id === id);
             if (link) { link.visitCount = (link.visitCount || 0) + 1; saveLinks(); }
@@ -2120,6 +2370,8 @@
                 bar.classList.remove('active');
             }
         }
+
+        /* ── MODIFIED: bulkDelete now uses type-DELETE guard ── */
         function bulkDelete() {
             const n = selectedIds.size; if (!n) return;
             const titles = [...selectedIds].map(id => links.find(l => l.id === id)?.title).filter(Boolean);
@@ -2133,8 +2385,10 @@
                 closeModal('bulk-delete-modal');
                 showToast('🗑 ' + n + ' link' + (n !== 1 ? 's' : '') + ' deleted.', 'info');
             };
+            _guardDeleteBtn('type-input-bulk-delete', 'bulk-delete-confirm-btn');
             openModal('bulk-delete-modal');
         }
+
         function bulkExport() {
             const sel = links.filter(l => selectedIds.has(l.id));
             const ts = getExportTimestamp();
@@ -2152,8 +2406,6 @@
 
         /* ================================================================
            SEARCH & SORT
-           onSearch uses a debounced wrapper so the full DOM is not rebuilt
-           on every single keystroke — improves performance on large vaults.
         ================================================================ */
         const _debouncedRender = debounce(renderLinks, 250);
 
@@ -2166,7 +2418,7 @@
             inp.value = '';
             document.getElementById('clear-search-btn').style.display = 'none';
             inp.focus();
-            renderLinks(); // immediate render on explicit clear
+            renderLinks();
         }
         function getFilteredLinks() {
             const q = document.getElementById('search-input').value.toLowerCase().trim();
@@ -2191,10 +2443,6 @@
 
         /* ================================================================
            RENDER
-           ── SECURITY: all onclick handlers that pass a record ID now use
-              data-* attributes and read them back with this.dataset.<name>.
-              This means the ID is never interpolated inside a JS string
-              literal, eliminating any JS-injection risk from crafted IDs.
         ================================================================ */
         function highlight(text, query) {
             if (!query) return escHtml(text);
@@ -2254,7 +2502,6 @@
                 const lid = escHtml(link.id);
                 const lurl = escHtml(link.url);
 
-                /* Favicon: try Google S2 (root domain), fall back to letter avatar */
                 const _host = getHostname(link.url);
                 const _rdomain = getRootDomainFromHostname(_host);
                 let av;
@@ -2288,35 +2535,29 @@
                     + '<div class="link-footer">'
                     + '<span class="link-date">&#128197; ' + formatDate(link.createdAt) + '</span>'
                     + '<div class="link-actions" role="group" aria-label="Actions for ' + escHtml(link.title) + '">'
-                    /* Visit — data-id + data-url already present; onclick uses dataset */
                     + '<button class="link-action-btn btn-visit" type="button"'
                     + ' data-id="' + lid + '" data-url="' + lurl + '"'
                     + ' onclick="visitLink(this.dataset.id,this.dataset.url)"'
                     + ' aria-label="Visit ' + escHtml(link.title) + '">&#8599; Visit</button>'
-                    /* Copy */
                     + '<button class="link-action-btn btn-copy" type="button"'
                     + ' data-url="' + lurl + '"'
                     + ' onclick="copyLink(this.dataset.url)"'
                     + ' aria-label="Copy URL">📋 Copy</button>'
-                    /* Edit — uses data-id + dataset.id */
                     + '<button class="link-action-btn btn-edit" type="button"'
                     + ' data-id="' + lid + '"'
                     + ' onclick="openEditModal(this.dataset.id)"'
                     + ' aria-label="Edit ' + escHtml(link.title) + '">&#9999;&#65039;</button>'
-                    /* Pin — uses data-id + dataset.id */
                     + '<button class="link-action-btn btn-pin' + (link.pinned ? ' pinned' : '') + '" type="button"'
                     + ' data-id="' + lid + '"'
                     + ' onclick="togglePin(this.dataset.id)"'
                     + ' aria-pressed="' + link.pinned + '"'
                     + ' aria-label="' + (link.pinned ? 'Unpin' : 'Pin') + ' ' + escHtml(link.title) + '">'
                     + (link.pinned ? '&#128204;' : '&#128205;') + '</button>'
-                    /* Select — uses data-id + dataset.id */
                     + '<button class="link-action-btn btn-select' + (isSel ? ' selected' : '') + '" type="button"'
                     + ' data-id="' + lid + '"'
                     + ' onclick="toggleSelect(this.dataset.id)"'
                     + ' aria-pressed="' + isSel + '"'
                     + ' aria-label="' + (isSel ? 'Deselect' : 'Select') + ' ' + escHtml(link.title) + '">&#10003;</button>'
-                    /* Delete — uses data-id + dataset.id */
                     + '<button class="link-action-btn btn-del" type="button"'
                     + ' data-id="' + lid + '"'
                     + ' onclick="confirmDelete(this.dataset.id)"'
@@ -2341,9 +2582,6 @@
                 prompt('Copy:', su);
         }
 
-        /* ── FIX: export filename now includes full date + time ──────────
-           Format: linkvault-export-DD-MM-YYYY_HH-MM-AM.json
-        ─────────────────────────────────────────────────────────────── */
         function exportData() {
             const ts = getExportTimestamp();
             const blob = new Blob(
@@ -2358,34 +2596,89 @@
             showToast('Export downloaded! 📦', 'success');
         }
 
-        function openImportModal() { document.getElementById('import-textarea').value = ''; openModal('import-modal'); }
+        /* ── MODIFIED: openImportModal resets file input ── */
+        function openImportModal() {
+            const fi = document.getElementById('import-file-real');
+            if (fi) fi.value = '';
+            const info = document.getElementById('import-file-info');
+            if (info) { info.textContent = ''; info.style.color = ''; }
+            const dropText = document.getElementById('file-drop-text');
+            if (dropText) dropText.textContent = 'Click to select a .json file';
+            openModal('import-modal');
+        }
 
-        /* ── SECURITY improvements in importData ─────────────────────────
-           1. Hard size cap (5 MB) to prevent memory exhaustion from huge
-              payloads.
-           2. Link batch cap (10 000) as a secondary safeguard.
-           3. Category IDs are sanitized with the same regex used in
-              loadData() before being stored.
-           4. Link IDs are sanitized with _SAFE_LINK_ID before being stored.
-        ─────────────────────────────────────────────────────────────── */
+        /* ── NEW: onImportFileSelected — updates UI with file info ── */
+        function onImportFileSelected(input) {
+            const info = document.getElementById('import-file-info');
+            const dropText = document.getElementById('file-drop-text');
+            if (!input.files || !input.files[0]) {
+                if (info) { info.textContent = ''; info.style.color = ''; }
+                if (dropText) dropText.textContent = 'Click to select a .json file';
+                return;
+            }
+            const f = input.files[0];
+            const sizeStr = f.size < 1024 ? f.size + ' B'
+                : f.size < 1024 * 1024 ? (f.size / 1024).toFixed(1) + ' KB'
+                    : (f.size / 1024 / 1024).toFixed(2) + ' MB';
+            if (info) {
+                info.textContent = '📄 ' + f.name + '  (' + sizeStr + ')';
+                info.style.color = 'var(--success)';
+            }
+            if (dropText) dropText.textContent = f.name;
+        }
+
+        /* ── MODIFIED: importData now reads from file input via FileReader ── */
         function importData() {
-            try {
-                const raw = document.getElementById('import-textarea').value.trim();
+            const fileInput = document.getElementById('import-file-real');
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                showToast('Please select a .json backup file first.', 'error');
+                return;
+            }
+            const file = fileInput.files[0];
 
-                /* Guard 1: size cap */
-                if (raw.length > 5 * 1024 * 1024) {
-                    showToast('Import data too large (max 5 MB).', 'error');
+            // Size guard (10 MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File too large (max 10 MB).', 'error');
+                return;
+            }
+            // Type guard
+            const isJsonType = file.type === 'application/json' || file.type === 'text/plain';
+            const isJsonExt = file.name.toLowerCase().endsWith('.json');
+            if (!isJsonType && !isJsonExt) {
+                showToast('Please select a valid .json file.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                _processImport(e.target.result);
+            };
+            reader.onerror = function () {
+                showToast('Failed to read the file. Please try again.', 'error');
+            };
+            reader.readAsText(file, 'utf-8');
+        }
+
+        /* ── NEW: _processImport — extracted and hardened import logic ── */
+        function _processImport(raw) {
+            try {
+                if (!raw || typeof raw !== 'string') throw new Error('Empty content');
+
+                // Hard size cap
+                if (raw.length > 10 * 1024 * 1024) {
+                    showToast('Import data too large (max 10 MB).', 'error');
                     return;
                 }
 
                 const data = JSON.parse(raw);
                 let added = 0;
-                if (typeof data !== 'object' || data === null) throw new Error('Not an object');
+                if (typeof data !== 'object' || data === null || Array.isArray(data))
+                    throw new Error('Root must be an object');
 
+                // Merge categories
                 if (data.categories && Array.isArray(data.categories)) {
                     data.categories.forEach(c => {
                         if (typeof c.id !== 'string' || typeof c.label !== 'string') return;
-                        /* Sanitize imported category ID */
                         const si = String(c.id).trim().toLowerCase().replace(/\s+/g, '-').replace(_SAFE_CAT_ID, '').slice(0, 50);
                         const sl = String(c.label).trim().slice(0, 50);
                         if (!si || categories.find(x => x.id === si)) return;
@@ -2394,27 +2687,30 @@
                     saveCats();
                 }
 
+                // Merge links
                 if (data.links && Array.isArray(data.links)) {
-                    /* Guard 2: link count cap */
-                    const importBatch = data.links.slice(0, 10000);
+                    const importBatch = data.links.slice(0, 10000); // hard cap
                     const ex = new Set(links.map(l => l.id));
                     importBatch.forEach(l => {
                         if (typeof l.id !== 'string' || typeof l.title !== 'string' || typeof l.url !== 'string') return;
                         const su = normalizeUrl(l.url); if (!su) return;
-                        /* Sanitize imported link ID */
                         const si = String(l.id).trim().replace(_SAFE_LINK_ID, '').slice(0, 100);
                         if (!si || ex.has(si)) return;
+                        // Ensure category exists; fallback to 'other'
+                        const lcat = typeof l.category === 'string' ? l.category.trim().slice(0, 50) : 'other';
+                        const safeCat = categories.find(c => c.id === lcat) ? lcat : 'other';
                         links.push({
                             id: si,
                             title: String(l.title).trim().slice(0, 80),
                             url: su.slice(0, 2000),
-                            category: typeof l.category === 'string' && l.category.trim() ? l.category.trim().slice(0, 50) : 'other',
+                            category: safeCat,
                             notes: typeof l.notes === 'string' ? l.notes.trim().slice(0, 120) : '',
                             createdAt: typeof l.createdAt === 'string' ? l.createdAt : new Date().toISOString(),
                             editedAt: typeof l.editedAt === 'string' ? l.editedAt : undefined,
                             pinned: Boolean(l.pinned),
                             visitCount: Number.isFinite(l.visitCount) ? l.visitCount : 0
                         });
+                        ex.add(si); // prevent duplicates within the same batch
                         added++;
                     });
                     saveLinks();
@@ -2423,19 +2719,65 @@
                 loadData().then(() => { buildCategoryOptions(); buildCategoryList(); renderLinks(); });
                 closeModal('import-modal');
                 showToast('Imported ' + added + ' new link(s)! 🎉', 'success');
-            } catch {
-                showToast('Invalid JSON. Please check and try again.', 'error');
+            } catch (err) {
+                console.warn('LinkVault import error:', err);
+                showToast('Invalid or corrupt JSON file. Please check and try again.', 'error');
             }
         }
 
         /* ================================================================
            MODALS
         ================================================================ */
-        function openModal(id) { const el = document.getElementById(id); if (!el) return; el.classList.add('open'); const f = el.querySelector('button,input,textarea,select,[tabindex]'); if (f) setTimeout(() => f.focus(), 50); }
+        function openModal(id) {
+            const el = document.getElementById(id); if (!el) return;
+            el.classList.add('open');
+            // Focus first interactive element — for delete modals this is the type-input
+            const f = el.querySelector('input.delete-type-input, button, input, textarea, select, [tabindex]');
+            if (f) setTimeout(() => f.focus(), 60);
+        }
         function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); }
         document.querySelectorAll('.modal-overlay').forEach(el => {
             el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
         });
+
+        /* ================================================================
+           FILE DROP ZONE — drag-and-drop support for import modal
+        ================================================================ */
+        (function _initDropZone() {
+            const zone = document.getElementById('file-drop-zone');
+            const realInput = document.getElementById('import-file-real');
+            if (!zone || !realInput) return;
+
+            // Click on styled zone triggers real file input
+            zone.addEventListener('click', () => realInput.click());
+            zone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); realInput.click(); } });
+
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                zone.style.borderColor = 'var(--accent)';
+                zone.style.background = 'rgba(0,229,255,.06)';
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.style.borderColor = '';
+                zone.style.background = '';
+            });
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.style.borderColor = '';
+                zone.style.background = '';
+                const files = e.dataTransfer.files;
+                if (!files || !files[0]) return;
+                // Transfer to real input via DataTransfer
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(files[0]);
+                    realInput.files = dt.files;
+                    onImportFileSelected(realInput);
+                } catch {
+                    showToast('Drag-and-drop not supported — please use the file picker.', 'info');
+                }
+            });
+        })();
 
         /* ================================================================
            TOAST
@@ -2447,6 +2789,7 @@
             const ic = document.createElement('span');
             ic.textContent = { success: '✅', error: '❌', info: 'ℹ️' }[type] || 'ℹ️';
             el.appendChild(ic);
+            // Use textContent for safety — never innerHTML for toast messages
             el.appendChild(document.createTextNode(' ' + msg));
             c.appendChild(el);
             setTimeout(() => { el.classList.add('removing'); setTimeout(() => el.remove(), 280); }, 3000);
@@ -2459,7 +2802,7 @@
             const el = document.getElementById(id); if (!el) return;
             el.style.animation = 'none';
             el.style.borderColor = 'var(--danger)';
-            el.offsetHeight; // reflow
+            el.offsetHeight; // force reflow
             el.style.animation = 'shake .4s ease';
             setTimeout(() => { el.style.animation = ''; el.style.borderColor = ''; }, 500);
         }
@@ -2500,11 +2843,18 @@
         /* ================================================================
            UTILS
         ================================================================ */
-        function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+        function escHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
         function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
         /* ================================================================
-           INIT  — async, waits for IndexedDB before first render
+           INIT — async, waits for IndexedDB before first render
         ================================================================ */
         async function init() {
             try { await _openDB(); await _migrateFromLocalStorage(); await loadData(); }
