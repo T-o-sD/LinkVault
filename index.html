@@ -40,6 +40,9 @@
             padding: 0;
         }
 
+        /* FIX 1: Remove overflow:hidden from html/body so the welcome screen
+       can scroll on mobile. The fixed toolbar + fixed frame-area handle
+       their own overflow independently. */
         html,
         body {
             height: 100%;
@@ -47,6 +50,7 @@
             background: var(--bg);
             color: var(--text);
             overflow: hidden;
+            /* kept — everything is in fixed/absolute containers */
         }
 
         /* ── ANIMATED BG ── */
@@ -147,9 +151,7 @@
             }
 
             50% {
-                box-shadow:
-                    0 0 28px rgba(162, 89, 255, 0.8),
-                    0 0 48px rgba(0, 212, 255, 0.3);
+                box-shadow: 0 0 28px rgba(162, 89, 255, 0.8), 0 0 48px rgba(0, 212, 255, 0.3);
             }
         }
 
@@ -269,7 +271,7 @@
             z-index: 1;
         }
 
-        /* ── MOBILE HAMBURGER (hidden by default) ── */
+        /* ── MOBILE HAMBURGER ── */
         #ham-btn {
             display: none;
             align-items: center;
@@ -367,9 +369,16 @@
             background: rgba(162, 89, 255, 0.08);
         }
 
-        /* ── IFRAME CONTAINER ── */
+        /* ── FRAME AREA ──
+       FIX 2: Changed from margin-top positioning to position:fixed so that
+       child iframes with position:absolute + inset:0 have a proper
+       containing block to anchor against. */
         #frame-area {
-            margin-top: var(--toolbar-h);
+            position: fixed;
+            top: var(--toolbar-h);
+            left: 0;
+            right: 0;
+            bottom: 0;
             z-index: 1;
         }
 
@@ -387,19 +396,42 @@
             display: block;
         }
 
-        /* ── WELCOME SCREEN ── */
+        /* ── WELCOME SCREEN ──
+       FIX 3: position:absolute + inset:0 + overflow-y:auto gives the
+       welcome screen its own scrollable viewport.
+       The inner .welcome-inner wrapper uses margin:auto so it stays
+       centred when content fits, but starts from the top (and scrolls)
+       when the viewport is too short — eliminating the top-clipping
+       that justify-content:center causes on small screens. */
         #welcome {
+            position: absolute;
+            inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 32px;
-            padding: 24px;
-            z-index: 2;
             overflow-y: auto;
+            overflow-x: hidden;
+            /* smooth momentum scrolling on iOS */
+            -webkit-overflow-scrolling: touch;
+            /* thin scrollbar on supporting browsers */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(162, 89, 255, 0.3) transparent;
             transition:
                 opacity 0.3s ease,
                 visibility 0.3s;
+        }
+
+        #welcome::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #welcome::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #welcome::-webkit-scrollbar-thumb {
+            background: rgba(162, 89, 255, 0.3);
+            border-radius: 2px;
         }
 
         #welcome.hidden {
@@ -408,10 +440,24 @@
             pointer-events: none;
         }
 
+        /* Inner wrapper — margin:auto centres vertically when there is room */
+        .welcome-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            padding: 32px 24px;
+            width: 100%;
+            /* auto top/bottom margins absorb free space, producing vertical
+         centering without the clip-at-top problem of justify-content */
+            margin: auto;
+        }
+
         .subWelcome {
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 10px;
         }
 
         .welcome-title {
@@ -467,6 +513,7 @@
             cursor: pointer;
             transition: var(--trans);
             backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -492,6 +539,11 @@
                 0 8px 32px rgba(0, 0, 0, 0.4),
                 0 0 0 1px var(--card-color),
                 0 0 24px var(--card-glow);
+        }
+
+        /* Tap highlight for mobile */
+        .tool-card:active {
+            transform: translateY(-2px) scale(0.98);
         }
 
         .card-emoji {
@@ -568,6 +620,12 @@
                 gap: 8px;
                 padding: 0 12px;
             }
+
+            /* Tighten inner padding on small screens so cards are fully reachable */
+            .welcome-inner {
+                padding: 20px 16px 32px;
+                gap: 24px;
+            }
         }
 
         @media (max-width: 380px) {
@@ -642,109 +700,83 @@
 
     <!-- ══════════════ MOBILE DRAWER ══════════════ -->
     <div id="drawer" role="menu">
-        <button class="drawer-tab" style="--tab-color: #00d4ff" onclick="
-          switchTool('water');
-          closeDrawer();
-        ">
+        <button class="drawer-tab" style="--tab-color: #00d4ff" onclick="switchTool('water'); closeDrawer();">
             <span style="font-size: 1.2rem">💧</span> Water Tracker
         </button>
-        <button class="drawer-tab" style="--tab-color: #a259ff" onclick="
-          switchTool('password');
-          closeDrawer();
-        ">
+        <button class="drawer-tab" style="--tab-color: #a259ff" onclick="switchTool('password'); closeDrawer();">
             <span style="font-size: 1.2rem">🔐</span> Password Generator
         </button>
-        <button class="drawer-tab" style="--tab-color: #00ffb3" onclick="
-          switchTool('days');
-          closeDrawer();
-        ">
+        <button class="drawer-tab" style="--tab-color: #00ffb3" onclick="switchTool('days'); closeDrawer();">
             <span style="font-size: 1.2rem">📅</span> Days Calculator
         </button>
-        <button class="drawer-tab" style="--tab-color: #ff6b9d" onclick="
-          switchTool('links');
-          closeDrawer();
-        ">
+        <button class="drawer-tab" style="--tab-color: #ff6b9d" onclick="switchTool('links'); closeDrawer();">
             <span style="font-size: 1.2rem">🔗</span> LinkVault
         </button>
     </div>
 
     <!-- ══════════════ FRAME AREA ══════════════ -->
     <div id="frame-area">
+
         <!-- Welcome Screen -->
         <div id="welcome" role="main">
-            <div class="subWelcome">
-                <div class="welcome-title">⚡ Essential Tools Hub</div>
-                <p class="welcome-sub">
-                    Your personal productivity suite — all tools in one place. Pick a
-                    tool below to get started.
-                </p>
-            </div>
-            <div class="tools-grid">
-                <div class="tool-card" role="button" tabindex="0" style="
+            <!-- FIX 3 wrapper: margin:auto centres content vertically when viewport
+           allows, and scrolling takes over when content is taller than viewport -->
+            <div class="welcome-inner">
+                <div class="subWelcome">
+                    <div class="welcome-title">⚡ Essential Tools Hub</div>
+                    <p class="welcome-sub">
+                        Your personal productivity suite — all tools in one place. Pick a
+                        tool below to get started.
+                    </p>
+                </div>
+
+                <div class="tools-grid">
+                    <div class="tool-card" role="button" tabindex="0" style="
               --card-color: #00d4ff;
-              --card-grad: radial-gradient(
-                ellipse at top,
-                rgba(0, 212, 255, 0.08),
-                transparent
-              );
+              --card-grad: radial-gradient(ellipse at top, rgba(0, 212, 255, 0.08), transparent);
               --card-glow: rgba(0, 212, 255, 0.2);
             " onclick="switchToolFromCard('water')"
-                    onkeydown="if (event.key === 'Enter') switchToolFromCard('water');">
-                    <span class="card-emoji">💧</span>
-                    <span class="card-name">Water Tracker</span>
-                    <span class="card-desc">Track daily hydration, pee count, set goals &amp; view
-                        history</span>
-                </div>
+                        onkeydown="if (event.key === 'Enter') switchToolFromCard('water');">
+                        <span class="card-emoji">💧</span>
+                        <span class="card-name">Water Tracker</span>
+                        <span class="card-desc">Track daily hydration, pee count, set goals &amp; view history</span>
+                    </div>
 
-                <div class="tool-card" role="button" tabindex="0" style="
+                    <div class="tool-card" role="button" tabindex="0" style="
               --card-color: #a259ff;
-              --card-grad: radial-gradient(
-                ellipse at top,
-                rgba(162, 89, 255, 0.08),
-                transparent
-              );
+              --card-grad: radial-gradient(ellipse at top, rgba(162, 89, 255, 0.08), transparent);
               --card-glow: rgba(162, 89, 255, 0.2);
-            " onclick="switchToolFromCard('password')" onkeydown="
-              if (event.key === 'Enter') switchToolFromCard('password');
-            ">
-                    <span class="card-emoji">🔐</span>
-                    <span class="card-name">Password Generator</span>
-                    <span class="card-desc">Generate ultra-secure passwords with custom rules &amp; strength
-                        meter</span>
-                </div>
+            " onclick="switchToolFromCard('password')"
+                        onkeydown="if (event.key === 'Enter') switchToolFromCard('password');">
+                        <span class="card-emoji">🔐</span>
+                        <span class="card-name">Password Generator</span>
+                        <span class="card-desc">Generate ultra-secure passwords with custom rules &amp; strength
+                            meter</span>
+                    </div>
 
-                <div class="tool-card" role="button" tabindex="0" style="
+                    <div class="tool-card" role="button" tabindex="0" style="
               --card-color: #00ffb3;
-              --card-grad: radial-gradient(
-                ellipse at top,
-                rgba(0, 255, 179, 0.08),
-                transparent
-              );
+              --card-grad: radial-gradient(ellipse at top, rgba(0, 255, 179, 0.08), transparent);
               --card-glow: rgba(0, 255, 179, 0.2);
             " onclick="switchToolFromCard('days')" onkeydown="if (event.key === 'Enter') switchToolFromCard('days');">
-                    <span class="card-emoji">📅</span>
-                    <span class="card-name">Days Calculator</span>
-                    <span class="card-desc">Age calculator, days between dates, add durations &amp; time
-                        math</span>
-                </div>
+                        <span class="card-emoji">📅</span>
+                        <span class="card-name">Days Calculator</span>
+                        <span class="card-desc">Age calculator, days between dates, add durations &amp; time math</span>
+                    </div>
 
-                <div class="tool-card" role="button" tabindex="0" style="
+                    <div class="tool-card" role="button" tabindex="0" style="
               --card-color: #ff6b9d;
-              --card-grad: radial-gradient(
-                ellipse at top,
-                rgba(255, 107, 157, 0.08),
-                transparent
-              );
+              --card-grad: radial-gradient(ellipse at top, rgba(255, 107, 157, 0.08), transparent);
               --card-glow: rgba(255, 107, 157, 0.2);
             " onclick="switchToolFromCard('links')"
-                    onkeydown="if (event.key === 'Enter') switchToolFromCard('links');">
-                    <span class="card-emoji">🔗</span>
-                    <span class="card-name">LinkVault</span>
-                    <span class="card-desc">Save, organise, search &amp; export all your important
-                        links</span>
+                        onkeydown="if (event.key === 'Enter') switchToolFromCard('links');">
+                        <span class="card-emoji">🔗</span>
+                        <span class="card-name">LinkVault</span>
+                        <span class="card-desc">Save, organise, search &amp; export all your important links</span>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </div><!-- /.welcome-inner -->
+        </div><!-- /#welcome -->
 
         <!-- Tool iFrames — loaded lazily on first click -->
         <iframe id="frame-water" class="tool-frame" title="Daily Water Intake Tracker" role="tabpanel"
@@ -755,11 +787,15 @@
             aria-labelledby="tab-days"></iframe>
         <iframe id="frame-links" class="tool-frame" title="LinkVault" role="tabpanel"
             aria-labelledby="tab-links"></iframe>
-    </div>
+
+    </div><!-- /#frame-area -->
 
     <script>
         "use strict";
 
+        /* ─────────────────────────────────────────
+           TOOL REGISTRY
+        ───────────────────────────────────────── */
         const TOOLS = {
             water: {
                 tab: "tab-water",
@@ -787,59 +823,71 @@
             },
         };
 
+        const TOOL_ORDER = ["water", "password", "days", "links"];
         const BASE_TITLE = "⚡ Essential Tools Hub";
+        const STORAGE_KEY = "etCurrentTool"; // FIX 4: persistence key
+
         let current = null;
         const loaded = {};
 
+        /* ─────────────────────────────────────────
+           WELCOME SCREEN
+        ───────────────────────────────────────── */
         function showWelcome(e) {
             if (e) e.preventDefault();
-            Object.keys(TOOLS).forEach((k) => {
-                document.getElementById(TOOLS[k].tab).classList.remove("active");
-                document
-                    .getElementById(TOOLS[k].tab)
-                    .setAttribute("aria-selected", "false");
-                document.getElementById(TOOLS[k].frame).classList.remove("active");
+
+            TOOL_ORDER.forEach(function (k) {
+                var cfg = TOOLS[k];
+                document.getElementById(cfg.tab).classList.remove("active");
+                document.getElementById(cfg.tab).setAttribute("aria-selected", "false");
+                document.getElementById(cfg.frame).classList.remove("active");
             });
-            document
-                .querySelectorAll(".drawer-tab")
-                .forEach((t) => t.classList.remove("active"));
-            const w = document.getElementById("welcome");
-            w.classList.remove("hidden");
+
+            document.querySelectorAll(".drawer-tab").forEach(function (t) {
+                t.classList.remove("active");
+            });
+
+            document.getElementById("welcome").classList.remove("hidden");
             document.title = BASE_TITLE;
             current = null;
+
+            // FIX 4: clear persisted tool state when user returns to welcome
+            try { localStorage.removeItem(STORAGE_KEY); } catch (_) { }
         }
 
+        /* ─────────────────────────────────────────
+           SWITCH TOOL
+        ───────────────────────────────────────── */
         function switchTool(key) {
             if (!TOOLS[key]) return;
-            const cfg = TOOLS[key];
+            var cfg = TOOLS[key];
 
-            // Hide welcome with fade
+            // Fade out welcome screen
             document.getElementById("welcome").classList.add("hidden");
 
-            // Deactivate all
-            Object.keys(TOOLS).forEach((k) => {
-                document.getElementById(TOOLS[k].tab).classList.remove("active");
-                document
-                    .getElementById(TOOLS[k].tab)
-                    .setAttribute("aria-selected", "false");
-                document.getElementById(TOOLS[k].frame).classList.remove("active");
+            // Deactivate all tabs & frames
+            TOOL_ORDER.forEach(function (k) {
+                var c = TOOLS[k];
+                document.getElementById(c.tab).classList.remove("active");
+                document.getElementById(c.tab).setAttribute("aria-selected", "false");
+                document.getElementById(c.frame).classList.remove("active");
             });
-            document
-                .querySelectorAll(".drawer-tab")
-                .forEach((t) => t.classList.remove("active"));
+
+            document.querySelectorAll(".drawer-tab").forEach(function (t) {
+                t.classList.remove("active");
+            });
 
             // Activate chosen tab
             document.getElementById(cfg.tab).classList.add("active");
             document.getElementById(cfg.tab).setAttribute("aria-selected", "true");
 
             // Activate matching drawer tab
-            const drawerTabs = document.querySelectorAll(".drawer-tab");
-            const order = ["water", "password", "days", "links"];
-            const idx = order.indexOf(key);
+            var idx = TOOL_ORDER.indexOf(key);
+            var drawerTabs = document.querySelectorAll(".drawer-tab");
             if (drawerTabs[idx]) drawerTabs[idx].classList.add("active");
 
             // Lazy-load iframe on first use
-            const frame = document.getElementById(cfg.frame);
+            var frame = document.getElementById(cfg.frame);
             if (!loaded[key]) {
                 showLoader();
                 frame.src = cfg.src;
@@ -850,65 +898,72 @@
 
             frame.classList.add("active");
             current = key;
-
-            // Update page title
             document.title = cfg.title + " — Essential Tools";
+
+            // FIX 4: persist the active tool so a page reload restores it
+            try { localStorage.setItem(STORAGE_KEY, key); } catch (_) { }
         }
 
-        /* Called from welcome cards — also closes drawer if open on mobile */
+        /* Called from welcome cards — also closes drawer on mobile */
         function switchToolFromCard(key) {
             closeDrawer();
             switchTool(key);
         }
 
-        /* ── Loading bar ── */
-        let loaderTimer;
+        /* ─────────────────────────────────────────
+           LOADING BAR
+        ───────────────────────────────────────── */
+        var loaderTimer;
+
         function showLoader() {
-            const bar = document.getElementById("loading-bar");
+            var bar = document.getElementById("loading-bar");
             clearTimeout(loaderTimer);
             bar.style.transition = "none";
             bar.style.width = "0%";
             bar.style.opacity = "1";
-            // Force reflow then animate
-            bar.offsetHeight;
+            bar.offsetHeight; // force reflow
             bar.style.transition = "width 0.3s ease, opacity 0.4s ease";
-            requestAnimationFrame(() => {
+            requestAnimationFrame(function () {
                 bar.style.width = "70%";
             });
         }
+
         function hideLoader() {
-            const bar = document.getElementById("loading-bar");
+            var bar = document.getElementById("loading-bar");
             bar.style.width = "100%";
-            loaderTimer = setTimeout(() => {
+            loaderTimer = setTimeout(function () {
                 bar.style.opacity = "0";
-                setTimeout(() => {
+                setTimeout(function () {
                     bar.style.width = "0%";
                 }, 400);
             }, 300);
         }
 
-        /* ── Mobile drawer ── */
+        /* ─────────────────────────────────────────
+           MOBILE DRAWER
+        ───────────────────────────────────────── */
         function toggleDrawer() {
-            const d = document.getElementById("drawer");
-            const o = document.getElementById("drawer-overlay");
-            const btn = document.getElementById("ham-btn");
-            const open = d.classList.toggle("open");
-            o.classList.toggle("open", open);
-            btn.setAttribute("aria-expanded", String(open));
-            btn.textContent = open ? "✕" : "☰";
+            var d = document.getElementById("drawer");
+            var o = document.getElementById("drawer-overlay");
+            var btn = document.getElementById("ham-btn");
+            var isOpen = d.classList.toggle("open");
+            o.classList.toggle("open", isOpen);
+            btn.setAttribute("aria-expanded", String(isOpen));
+            btn.textContent = isOpen ? "✕" : "☰";
         }
+
         function closeDrawer() {
             document.getElementById("drawer").classList.remove("open");
             document.getElementById("drawer-overlay").classList.remove("open");
-            const btn = document.getElementById("ham-btn");
+            var btn = document.getElementById("ham-btn");
             btn.setAttribute("aria-expanded", "false");
             btn.textContent = "☰";
         }
 
         /* Close drawer on outside click */
-        document.addEventListener("click", (e) => {
-            const d = document.getElementById("drawer");
-            const btn = document.getElementById("ham-btn");
+        document.addEventListener("click", function (e) {
+            var d = document.getElementById("drawer");
+            var btn = document.getElementById("ham-btn");
             if (
                 d.classList.contains("open") &&
                 !d.contains(e.target) &&
@@ -918,23 +973,40 @@
             }
         });
 
-        /* Keyboard navigation: Escape closes drawer, 1-4 switch tools */
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") closeDrawer();
-            // Don't trigger shortcuts when typing in inputs/iframes
+        /* Keyboard shortcuts */
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") { closeDrawer(); return; }
+
+            // Don't fire shortcuts while the user is typing
             if (
                 e.target.tagName === "INPUT" ||
                 e.target.tagName === "TEXTAREA" ||
                 e.target.tagName === "SELECT"
-            )
-                return;
+            ) return;
             if (e.target.closest("iframe")) return;
-            const shortcuts = { 1: "water", 2: "password", 3: "days", 4: "links" };
+
+            var shortcuts = { "1": "water", "2": "password", "3": "days", "4": "links" };
             if (shortcuts[e.key] && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 switchTool(shortcuts[e.key]);
                 closeDrawer();
             }
         });
+
+        /* ─────────────────────────────────────────
+           FIX 4 — RESTORE PERSISTED TOOL ON LOAD
+           Runs after DOM is ready (script is at
+           bottom of body so DOM is already parsed).
+        ───────────────────────────────────────── */
+        (function restoreLastTool() {
+            try {
+                var saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && TOOLS[saved]) {
+                    switchTool(saved);
+                }
+            } catch (_) {
+                // localStorage unavailable (private mode, etc.) — silently ignore
+            }
+        })();
     </script>
 </body>
 
