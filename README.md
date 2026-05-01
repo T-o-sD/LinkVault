@@ -1,2 +1,1 @@
-# LinkVault
-LinkVault - Share &amp; Discover Links
+Essential Tools Hub — Water Tracker, Password Generator, Days Calculator, LinkVault
