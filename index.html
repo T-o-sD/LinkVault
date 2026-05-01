@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0010">
+    <meta name="description"
+        content="Essential Tools Hub — Water Tracker, Password Generator, Days Calculator, LinkVault">
+    <title>⚡ Essential Tools Hub</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0010;
+            --toolbar-bg: rgba(12, 4, 22, 0.97);
+            --toolbar-h: 68px;
+            --border: rgba(255, 255, 255, 0.07);
+            --accent1: #a259ff;
+            --accent2: #00d4ff;
+            --accent3: #ff6b9d;
+            --accent4: #00ffb3;
+            --text: #f0eaff;
+            --text2: #9b8fc0;
+            --radius: 14px;
+            --trans: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: "Outfit", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* ── ANIMATED BG ── */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 20% 20%,
+                    rgba(162, 89, 255, 0.12) 0%,
+                    transparent 60%),
+                radial-gradient(ellipse 50% 40% at 80% 80%,
+                    rgba(0, 212, 255, 0.1) 0%,
+                    transparent 60%),
+                radial-gradient(ellipse 40% 50% at 60% 10%,
+                    rgba(255, 107, 157, 0.07) 0%,
+                    transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgShift 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgShift {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
+        }
+
+        /* ── GRID OVERLAY ── */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(162, 89, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(162, 89, 255, 0.05) 1px, transparent 1px);
+            background-size: 44px 44px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── TOOLBAR ── */
+        #toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--toolbar-h);
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(162, 89, 255, 0.2);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 10px;
+            z-index: 1000;
+            box-shadow:
+                0 4px 40px rgba(162, 89, 255, 0.15),
+                0 1px 0 rgba(255, 255, 255, 0.04) inset;
+        }
+
+        /* ── LOGO ── */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent1), var(--accent2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 0 16px rgba(162, 89, 255, 0.5);
+            animation: logoPulse 3s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 16px rgba(162, 89, 255, 0.5);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 28px rgba(162, 89, 255, 0.8),
+                    0 0 48px rgba(0, 212, 255, 0.3);
+            }
+        }
+
+        .logo-text {
+            font-family: "Space Mono", monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        .logo-text span {
+            color: var(--accent1);
+        }
+
+        /* ── SEPARATOR ── */
+        .sep {
+            width: 1px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        /* ── NAV TABS ── */
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text2);
+            font-family: "Outfit", sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--trans);
+            white-space: nowrap;
+            flex-shrink: 0;
+            outline: none;
+            overflow: hidden;
+        }
+
+        .tab::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: var(--tab-color, var(--accent1));
+            opacity: 0;
+            transition: opacity 0.3s;
+            border-radius: inherit;
+        }
+
+        .tab:hover::before {
+            opacity: 0.08;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .tab.active {
+            color: #fff;
+            border-color: var(--tab-color, var(--accent1));
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow:
+                0 0 0 1px var(--tab-color, var(--accent1)),
+                0 4px 20px rgba(0, 0, 0, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.03);
+        }
+
+        .tab.active::before {
+            opacity: 0.12;
+        }
+
+        /* Glowing bottom bar on active */
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: var(--tab-color, var(--accent1));
+            border-radius: 2px 2px 0 0;
+            box-shadow: 0 0 10px var(--tab-color, var(--accent1));
+        }
+
+        .tab-icon {
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-label {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── MOBILE HAMBURGER (hidden by default) ── */
+        #ham-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--trans);
+            flex-shrink: 0;
+        }
+
+        #ham-btn:hover {
+            background: rgba(162, 89, 255, 0.15);
+            border-color: var(--accent1);
+        }
+
+        /* ── MOBILE DRAWER ── */
+        #drawer {
+            position: fixed;
+            top: var(--toolbar-h);
+            left: 0;
+            right: 0;
+            background: rgba(12, 4, 22, 0.98);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(162, 89, 255, 0.2);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 12px 14px;
+            transform: translateY(-110%);
+            opacity: 0;
+            transition:
+                transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.35s;
+            pointer-events: none;
+        }
+
+        #drawer.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ── DRAWER BACKDROP OVERLAY ── */
+        #drawer-overlay {
+            position: fixed;
+            inset: 0;
+            top: var(--toolbar-h);
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer-tab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text2);
+            font-family: "Outfit", sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--trans);
+            width: 100%;
+            text-align: left;
+        }
+
+        .drawer-tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .drawer-tab.active {
+            color: #fff;
+            border-color: var(--tab-color, var(--accent1));
+            background: rgba(162, 89, 255, 0.08);
+        }
+
+        /* ── IFRAME CONTAINER ── */
+        #frame-area {
+            position: fixed;
+            top: var(--toolbar-h);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .tool-frame {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+            background: #0a0a0f;
+        }
+
+        .tool-frame.active {
+            display: block;
+        }
+
+        /* ── WELCOME SCREEN ── */
+        #welcome {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 32px;
+            padding: 24px;
+            z-index: 2;
+            overflow-y: auto;
+            transition:
+                opacity 0.3s ease,
+                visibility 0.3s;
+        }
+
+        #welcome.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .welcome-title {
+            font-family: "Space Mono", monospace;
+            font-size: clamp(1.6rem, 5vw, 2.8rem);
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg,
+                    var(--accent1) 0%,
+                    var(--accent2) 50%,
+                    var(--accent3) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from {
+                filter: brightness(1);
+            }
+
+            to {
+                filter: brightness(1.3) drop-shadow(0 0 20px rgba(162, 89, 255, 0.5));
+            }
+        }
+
+        .welcome-sub {
+            font-size: 1rem;
+            color: var(--text2);
+            text-align: center;
+            max-width: 420px;
+            line-height: 1.7;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            width: 100%;
+            max-width: 860px;
+        }
+
+        .tool-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 28px 20px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: var(--trans);
+            backdrop-filter: blur(8px);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: var(--card-grad);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tool-card:hover::before {
+            opacity: 1;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--card-color);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px var(--card-color),
+                0 0 24px var(--card-glow);
+        }
+
+        .card-emoji {
+            font-size: 2.4rem;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 0 12px var(--card-color));
+        }
+
+        .card-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-desc {
+            font-size: 0.78rem;
+            color: var(--text2);
+            position: relative;
+            z-index: 1;
+            line-height: 1.5;
+        }
+
+        /* ── LOADING INDICATOR ── */
+        #loading-bar {
+            position: fixed;
+            top: var(--toolbar-h);
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent1), var(--accent2));
+            z-index: 2000;
+            transition:
+                width 0.3s ease,
+                opacity 0.4s ease;
+            box-shadow: 0 0 10px var(--accent1);
+            opacity: 0;
+        }
+
+        /* ── TOOLTIP on active tab ── */
+        .tab-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--tab-color, var(--accent1));
+            box-shadow: 0 0 6px var(--tab-color, var(--accent1));
+            display: none;
+        }
+
+        .tab.active .tab-badge {
+            display: block;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 700px) {
+            .nav {
+                display: none;
+            }
+
+            #ham-btn {
+                display: flex;
+            }
+
+            .logo-text {
+                display: none;
+            }
+
+            #toolbar {
+                gap: 8px;
+                padding: 0 12px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .tools-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .tool-card {
+                padding: 20px 12px;
+            }
+
+            .card-emoji {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- LOADING BAR -->
+    <div id="loading-bar"></div>
+
+    <!-- ══════════════ TOOLBAR ══════════════ -->
+    <nav id="toolbar" role="navigation" aria-label="Essential Tools Navigation">
+        <!-- Logo -->
+        <a class="logo" href="#" onclick="showWelcome(event)">
+            <div class="logo-icon">⚡</div>
+            <span class="logo-text">Essential<span>Tools</span></span>
+        </a>
+
+        <div class="sep"></div>
+
+        <!-- Desktop Nav Tabs -->
+        <div class="nav" role="tablist">
+            <button class="tab" id="tab-water" role="tab" aria-selected="false" style="--tab-color: #00d4ff"
+                onclick="switchTool('water')" aria-controls="frame-water">
+                <span class="tab-icon">💧</span>
+                <span class="tab-label">Water Tracker</span>
+                <span class="tab-badge"></span>
+            </button>
+
+            <button class="tab" id="tab-password" role="tab" aria-selected="false" style="--tab-color: #a259ff"
+                onclick="switchTool('password')" aria-controls="frame-password">
+                <span class="tab-icon">🔐</span>
+                <span class="tab-label">Password Gen</span>
+                <span class="tab-badge"></span>
+            </button>
+
+            <button class="tab" id="tab-days" role="tab" aria-selected="false" style="--tab-color: #00ffb3"
+                onclick="switchTool('days')" aria-controls="frame-days">
+                <span class="tab-icon">📅</span>
+                <span class="tab-label">Days Calculator</span>
+                <span class="tab-badge"></span>
+            </button>
+
+            <button class="tab" id="tab-links" role="tab" aria-selected="false" style="--tab-color: #ff6b9d"
+                onclick="switchTool('links')" aria-controls="frame-links">
+                <span class="tab-icon">🔗</span>
+                <span class="tab-label">LinkVault</span>
+                <span class="tab-badge"></span>
+            </button>
+        </div>
+
+        <!-- Mobile hamburger -->
+        <button id="ham-btn" aria-label="Toggle menu" aria-expanded="false" onclick="toggleDrawer()">
+            ☰
+        </button>
+    </nav>
+
+    <!-- ══════════════ MOBILE DRAWER OVERLAY ══════════════ -->
+    <div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+    <!-- ══════════════ MOBILE DRAWER ══════════════ -->
+    <div id="drawer" role="menu">
+        <button class="drawer-tab" style="--tab-color: #00d4ff" onclick="
+          switchTool('water');
+          closeDrawer();
+        ">
+            <span style="font-size: 1.2rem">💧</span> Water Tracker
+        </button>
+        <button class="drawer-tab" style="--tab-color: #a259ff" onclick="
+          switchTool('password');
+          closeDrawer();
+        ">
+            <span style="font-size: 1.2rem">🔐</span> Password Generator
+        </button>
+        <button class="drawer-tab" style="--tab-color: #00ffb3" onclick="
+          switchTool('days');
+          closeDrawer();
+        ">
+            <span style="font-size: 1.2rem">📅</span> Days Calculator
+        </button>
+        <button class="drawer-tab" style="--tab-color: #ff6b9d" onclick="
+          switchTool('links');
+          closeDrawer();
+        ">
+            <span style="font-size: 1.2rem">🔗</span> LinkVault
+        </button>
+    </div>
+
+    <!-- ══════════════ FRAME AREA ══════════════ -->
+    <div id="frame-area">
+        <!-- Welcome Screen -->
+        <div id="welcome" role="main">
+            <div>
+                <div class="welcome-title">⚡ Essential Tools Hub</div>
+                <p class="welcome-sub">
+                    Your personal productivity suite — all tools in one place. Pick a
+                    tool below to get started.
+                </p>
+            </div>
+            <div class="tools-grid">
+                <div class="tool-card" role="button" tabindex="0" style="
+              --card-color: #00d4ff;
+              --card-grad: radial-gradient(
+                ellipse at top,
+                rgba(0, 212, 255, 0.08),
+                transparent
+              );
+              --card-glow: rgba(0, 212, 255, 0.2);
+            " onclick="switchToolFromCard('water')"
+                    onkeydown="if (event.key === 'Enter') switchToolFromCard('water');">
+                    <span class="card-emoji">💧</span>
+                    <span class="card-name">Water Tracker</span>
+                    <span class="card-desc">Track daily hydration, pee count, set goals &amp; view
+                        history</span>
+                </div>
+
+                <div class="tool-card" role="button" tabindex="0" style="
+              --card-color: #a259ff;
+              --card-grad: radial-gradient(
+                ellipse at top,
+                rgba(162, 89, 255, 0.08),
+                transparent
+              );
+              --card-glow: rgba(162, 89, 255, 0.2);
+            " onclick="switchToolFromCard('password')" onkeydown="
+              if (event.key === 'Enter') switchToolFromCard('password');
+            ">
+                    <span class="card-emoji">🔐</span>
+                    <span class="card-name">Password Generator</span>
+                    <span class="card-desc">Generate ultra-secure passwords with custom rules &amp; strength
+                        meter</span>
+                </div>
+
+                <div class="tool-card" role="button" tabindex="0" style="
+              --card-color: #00ffb3;
+              --card-grad: radial-gradient(
+                ellipse at top,
+                rgba(0, 255, 179, 0.08),
+                transparent
+              );
+              --card-glow: rgba(0, 255, 179, 0.2);
+            " onclick="switchToolFromCard('days')" onkeydown="if (event.key === 'Enter') switchToolFromCard('days');">
+                    <span class="card-emoji">📅</span>
+                    <span class="card-name">Days Calculator</span>
+                    <span class="card-desc">Age calculator, days between dates, add durations &amp; time
+                        math</span>
+                </div>
+
+                <div class="tool-card" role="button" tabindex="0" style="
+              --card-color: #ff6b9d;
+              --card-grad: radial-gradient(
+                ellipse at top,
+                rgba(255, 107, 157, 0.08),
+                transparent
+              );
+              --card-glow: rgba(255, 107, 157, 0.2);
+            " onclick="switchToolFromCard('links')"
+                    onkeydown="if (event.key === 'Enter') switchToolFromCard('links');">
+                    <span class="card-emoji">🔗</span>
+                    <span class="card-name">LinkVault</span>
+                    <span class="card-desc">Save, organise, search &amp; export all your important
+                        links</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tool iFrames — loaded lazily on first click -->
+        <iframe id="frame-water" class="tool-frame" title="Daily Water Intake Tracker" role="tabpanel"
+            aria-labelledby="tab-water"></iframe>
+        <iframe id="frame-password" class="tool-frame" title="Advanced Password Generator" role="tabpanel"
+            aria-labelledby="tab-password"></iframe>
+        <iframe id="frame-days" class="tool-frame" title="Total Days Calculator" role="tabpanel"
+            aria-labelledby="tab-days"></iframe>
+        <iframe id="frame-links" class="tool-frame" title="LinkVault" role="tabpanel"
+            aria-labelledby="tab-links"></iframe>
+    </div>
+
+    <script>
+        "use strict";
+
+        const TOOLS = {
+            water: {
+                tab: "tab-water",
+                frame: "frame-water",
+                src: "Daily Water Intake Tracker.html",
+                title: "💧 Water Tracker",
+            },
+            password: {
+                tab: "tab-password",
+                frame: "frame-password",
+                src: "Advanced Password Generator.html",
+                title: "🔐 Password Generator",
+            },
+            days: {
+                tab: "tab-days",
+                frame: "frame-days",
+                src: "Total Days Calculator.html",
+                title: "📅 Days Calculator",
+            },
+            links: {
+                tab: "tab-links",
+                frame: "frame-links",
+                src: "LinkVault_Database.html",
+                title: "🔗 LinkVault",
+            },
+        };
+
+        const BASE_TITLE = "⚡ Essential Tools Hub";
+        let current = null;
+        const loaded = {};
+
+        function showWelcome(e) {
+            if (e) e.preventDefault();
+            Object.keys(TOOLS).forEach((k) => {
+                document.getElementById(TOOLS[k].tab).classList.remove("active");
+                document
+                    .getElementById(TOOLS[k].tab)
+                    .setAttribute("aria-selected", "false");
+                document.getElementById(TOOLS[k].frame).classList.remove("active");
+            });
+            document
+                .querySelectorAll(".drawer-tab")
+                .forEach((t) => t.classList.remove("active"));
+            const w = document.getElementById("welcome");
+            w.classList.remove("hidden");
+            document.title = BASE_TITLE;
+            current = null;
+        }
+
+        function switchTool(key) {
+            if (!TOOLS[key]) return;
+            const cfg = TOOLS[key];
+
+            // Hide welcome with fade
+            document.getElementById("welcome").classList.add("hidden");
+
+            // Deactivate all
+            Object.keys(TOOLS).forEach((k) => {
+                document.getElementById(TOOLS[k].tab).classList.remove("active");
+                document
+                    .getElementById(TOOLS[k].tab)
+                    .setAttribute("aria-selected", "false");
+                document.getElementById(TOOLS[k].frame).classList.remove("active");
+            });
+            document
+                .querySelectorAll(".drawer-tab")
+                .forEach((t) => t.classList.remove("active"));
+
+            // Activate chosen tab
+            document.getElementById(cfg.tab).classList.add("active");
+            document.getElementById(cfg.tab).setAttribute("aria-selected", "true");
+
+            // Activate matching drawer tab
+            const drawerTabs = document.querySelectorAll(".drawer-tab");
+            const order = ["water", "password", "days", "links"];
+            const idx = order.indexOf(key);
+            if (drawerTabs[idx]) drawerTabs[idx].classList.add("active");
+
+            // Lazy-load iframe on first use
+            const frame = document.getElementById(cfg.frame);
+            if (!loaded[key]) {
+                showLoader();
+                frame.src = cfg.src;
+                frame.onload = hideLoader;
+                frame.onerror = hideLoader;
+                loaded[key] = true;
+            }
+
+            frame.classList.add("active");
+            current = key;
+
+            // Update page title
+            document.title = cfg.title + " — Essential Tools";
+        }
+
+        /* Called from welcome cards — also closes drawer if open on mobile */
+        function switchToolFromCard(key) {
+            closeDrawer();
+            switchTool(key);
+        }
+
+        /* ── Loading bar ── */
+        let loaderTimer;
+        function showLoader() {
+            const bar = document.getElementById("loading-bar");
+            clearTimeout(loaderTimer);
+            bar.style.transition = "none";
+            bar.style.width = "0%";
+            bar.style.opacity = "1";
+            // Force reflow then animate
+            bar.offsetHeight;
+            bar.style.transition = "width 0.3s ease, opacity 0.4s ease";
+            requestAnimationFrame(() => {
+                bar.style.width = "70%";
+            });
+        }
+        function hideLoader() {
+            const bar = document.getElementById("loading-bar");
+            bar.style.width = "100%";
+            loaderTimer = setTimeout(() => {
+                bar.style.opacity = "0";
+                setTimeout(() => {
+                    bar.style.width = "0%";
+                }, 400);
+            }, 300);
+        }
+
+        /* ── Mobile drawer ── */
+        function toggleDrawer() {
+            const d = document.getElementById("drawer");
+            const o = document.getElementById("drawer-overlay");
+            const btn = document.getElementById("ham-btn");
+            const open = d.classList.toggle("open");
+            o.classList.toggle("open", open);
+            btn.setAttribute("aria-expanded", String(open));
+            btn.textContent = open ? "✕" : "☰";
+        }
+        function closeDrawer() {
+            document.getElementById("drawer").classList.remove("open");
+            document.getElementById("drawer-overlay").classList.remove("open");
+            const btn = document.getElementById("ham-btn");
+            btn.setAttribute("aria-expanded", "false");
+            btn.textContent = "☰";
+        }
+
+        /* Close drawer on outside click */
+        document.addEventListener("click", (e) => {
+            const d = document.getElementById("drawer");
+            const btn = document.getElementById("ham-btn");
+            if (
+                d.classList.contains("open") &&
+                !d.contains(e.target) &&
+                !btn.contains(e.target)
+            ) {
+                closeDrawer();
+            }
+        });
+
+        /* Keyboard navigation: Escape closes drawer, 1-4 switch tools */
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") closeDrawer();
+            // Don't trigger shortcuts when typing in inputs/iframes
+            if (
+                e.target.tagName === "INPUT" ||
+                e.target.tagName === "TEXTAREA" ||
+                e.target.tagName === "SELECT"
+            )
+                return;
+            if (e.target.closest("iframe")) return;
+            const shortcuts = { 1: "water", 2: "password", 3: "days", 4: "links" };
+            if (shortcuts[e.key] && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                switchTool(shortcuts[e.key]);
+                closeDrawer();
+            }
+        });
+    </script>
+</body>
+
+</html>
