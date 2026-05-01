@@ -393,8 +393,6 @@
 
         /* ── WELCOME SCREEN ── */
         #welcome {
-            position: absolute;
-            inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -412,6 +410,12 @@
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
+        }
+
+        .subWelcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .welcome-title {
@@ -672,7 +676,7 @@
     <div id="frame-area">
         <!-- Welcome Screen -->
         <div id="welcome" role="main">
-            <div>
+            <div class="subWelcome">
                 <div class="welcome-title">⚡ Essential Tools Hub</div>
                 <p class="welcome-sub">
                     Your personal productivity suite — all tools in one place. Pick a
