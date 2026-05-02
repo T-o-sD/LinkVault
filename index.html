@@ -3,10 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0a0010">
     <meta name="description"
         content="Essential Tools Hub — Water Tracker, Password Generator, Days Calculator, LinkVault">
+    <!-- ── SECURITY: Content Security Policy ── -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src 'self'; img-src 'self' data:;">
     <title>⚡ Essential Tools Hub</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -40,17 +44,15 @@
             padding: 0;
         }
 
-        /* FIX 1: Remove overflow:hidden from html/body so the welcome screen
-       can scroll on mobile. The fixed toolbar + fixed frame-area handle
-       their own overflow independently. */
         html,
         body {
             height: 100%;
             font-family: "Outfit", sans-serif;
             background: var(--bg);
             color: var(--text);
+            /* overflow:hidden is intentional — all scrollable regions are
+         contained inside their own fixed/absolute containers */
             overflow: hidden;
-            /* kept — everything is in fixed/absolute containers */
         }
 
         /* ── ANIMATED BG ── */
@@ -70,6 +72,8 @@
                     transparent 60%);
             pointer-events: none;
             z-index: 0;
+            /* PERF: hint compositor to promote this layer */
+            will-change: transform, opacity;
             animation: bgShift 12s ease-in-out infinite alternate;
         }
 
@@ -139,8 +143,10 @@
             justify-content: center;
             font-size: 1.1rem;
             box-shadow: 0 0 16px rgba(162, 89, 255, 0.5);
-            animation: logoPulse 3s ease-in-out infinite;
             flex-shrink: 0;
+            /* PERF: isolate animation to its own layer */
+            will-change: box-shadow;
+            animation: logoPulse 3s ease-in-out infinite;
         }
 
         @keyframes logoPulse {
@@ -210,6 +216,8 @@
             flex-shrink: 0;
             outline: none;
             overflow: hidden;
+            /* UX: remove 300ms tap delay on mobile */
+            touch-action: manipulation;
         }
 
         .tab::before {
@@ -246,7 +254,7 @@
             opacity: 0.12;
         }
 
-        /* Glowing bottom bar on active */
+        /* Glowing bottom bar on active tab */
         .tab.active::after {
             content: "";
             position: absolute;
@@ -286,6 +294,8 @@
             cursor: pointer;
             transition: var(--trans);
             flex-shrink: 0;
+            /* UX: remove 300ms tap delay on mobile */
+            touch-action: manipulation;
         }
 
         #ham-btn:hover {
@@ -314,6 +324,8 @@
                 transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                 opacity 0.35s;
             pointer-events: none;
+            /* PERF: compositor layer for slide animation */
+            will-change: transform, opacity;
         }
 
         #drawer.open {
@@ -355,6 +367,8 @@
             transition: var(--trans);
             width: 100%;
             text-align: left;
+            /* UX: remove 300ms tap delay on mobile */
+            touch-action: manipulation;
         }
 
         .drawer-tab:hover {
@@ -370,9 +384,8 @@
         }
 
         /* ── FRAME AREA ──
-       FIX 2: Changed from margin-top positioning to position:fixed so that
-       child iframes with position:absolute + inset:0 have a proper
-       containing block to anchor against. */
+       position:fixed so that child iframes (position:absolute inset:0)
+       have a proper containing block. */
         #frame-area {
             position: fixed;
             top: var(--toolbar-h);
@@ -397,23 +410,27 @@
         }
 
         /* ── WELCOME SCREEN ──
-       FIX 3: position:absolute + inset:0 + overflow-y:auto gives the
-       welcome screen its own scrollable viewport.
-       The inner .welcome-inner wrapper uses margin:auto so it stays
-       centred when content fits, but starts from the top (and scrolls)
-       when the viewport is too short — eliminating the top-clipping
-       that justify-content:center causes on small screens. */
+       FIX: Added top:0 and bottom:0 so the element fills the full
+       height of #frame-area. Without these, overflow-y:auto has no
+       constrained height to scroll within, causing the bottom cards
+       to be unreachable on mobile.
+       overflow-y:auto then creates a proper scrollable region. */
         #welcome {
             position: absolute;
-            inset: 0;
+            top: 0;
+            /* ← FIX: anchor to top of #frame-area  */
+            bottom: 0;
+            /* ← FIX: anchor to bottom of #frame-area */
+            left: 0;
+            right: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow-y: auto;
             overflow-x: hidden;
-            /* smooth momentum scrolling on iOS */
+            /* smooth momentum scrolling on iOS Safari */
             -webkit-overflow-scrolling: touch;
-            /* thin scrollbar on supporting browsers */
+            /* thin styled scrollbar on supporting browsers */
             scrollbar-width: thin;
             scrollbar-color: rgba(162, 89, 255, 0.3) transparent;
             transition:
@@ -440,7 +457,9 @@
             pointer-events: none;
         }
 
-        /* Inner wrapper — margin:auto centres vertically when there is room */
+        /* Inner wrapper — margin:auto centres vertically when there is room;
+       natural top-to-bottom flow + scrolling takes over when content is
+       taller than the available viewport. */
         .welcome-inner {
             display: flex;
             flex-direction: column;
@@ -448,8 +467,6 @@
             gap: 32px;
             padding: 32px 24px;
             width: 100%;
-            /* auto top/bottom margins absorb free space, producing vertical
-         centering without the clip-at-top problem of justify-content */
             margin: auto;
         }
 
@@ -472,6 +489,8 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            /* PERF: hint compositor for filter animation */
+            will-change: filter;
             animation: titleGlow 4s ease-in-out infinite alternate;
         }
 
@@ -517,6 +536,8 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            /* UX: remove 300ms tap delay on mobile */
+            touch-action: manipulation;
         }
 
         .tool-card::before {
@@ -541,7 +562,7 @@
                 0 0 24px var(--card-glow);
         }
 
-        /* Tap highlight for mobile */
+        /* Tap feedback for mobile */
         .tool-card:active {
             transform: translateY(-2px) scale(0.98);
         }
@@ -569,7 +590,7 @@
             line-height: 1.5;
         }
 
-        /* ── LOADING INDICATOR ── */
+        /* ── LOADING BAR ── */
         #loading-bar {
             position: fixed;
             top: var(--toolbar-h);
@@ -585,7 +606,7 @@
             opacity: 0;
         }
 
-        /* ── TOOLTIP on active tab ── */
+        /* ── ACTIVE TAB BADGE ── */
         .tab-badge {
             position: absolute;
             top: 4px;
@@ -621,10 +642,11 @@
                 padding: 0 12px;
             }
 
-            /* Tighten inner padding on small screens so cards are fully reachable */
+            /* Tighten inner padding on small screens */
             .welcome-inner {
                 padding: 20px 16px 32px;
                 gap: 24px;
+                margin-bottom: 1rem;
             }
         }
 
@@ -719,8 +741,8 @@
 
         <!-- Welcome Screen -->
         <div id="welcome" role="main">
-            <!-- FIX 3 wrapper: margin:auto centres content vertically when viewport
-           allows, and scrolling takes over when content is taller than viewport -->
+            <!-- Inner wrapper: margin:auto centres vertically when viewport
+           permits, scroll takes over when content overflows. -->
             <div class="welcome-inner">
                 <div class="subWelcome">
                     <div class="welcome-title">⚡ Essential Tools Hub</div>
@@ -774,19 +796,27 @@
                         <span class="card-name">LinkVault</span>
                         <span class="card-desc">Save, organise, search &amp; export all your important links</span>
                     </div>
+
                 </div>
             </div><!-- /.welcome-inner -->
         </div><!-- /#welcome -->
 
-        <!-- Tool iFrames — loaded lazily on first click -->
+
         <iframe id="frame-water" class="tool-frame" title="Daily Water Intake Tracker" role="tabpanel"
-            aria-labelledby="tab-water"></iframe>
+            aria-labelledby="tab-water" referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
         <iframe id="frame-password" class="tool-frame" title="Advanced Password Generator" role="tabpanel"
-            aria-labelledby="tab-password"></iframe>
+            aria-labelledby="tab-password" referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
         <iframe id="frame-days" class="tool-frame" title="Total Days Calculator" role="tabpanel"
-            aria-labelledby="tab-days"></iframe>
-        <iframe id="frame-links" class="tool-frame" title="LinkVault" role="tabpanel"
-            aria-labelledby="tab-links"></iframe>
+            aria-labelledby="tab-days" referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
+        <iframe id="frame-links" class="tool-frame" title="LinkVault" role="tabpanel" aria-labelledby="tab-links"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"></iframe>
 
     </div><!-- /#frame-area -->
 
@@ -796,7 +826,7 @@
         /* ─────────────────────────────────────────
            TOOL REGISTRY
         ───────────────────────────────────────── */
-        const TOOLS = {
+        var TOOLS = {
             water: {
                 tab: "tab-water",
                 frame: "frame-water",
@@ -823,12 +853,12 @@
             },
         };
 
-        const TOOL_ORDER = ["water", "password", "days", "links"];
-        const BASE_TITLE = "⚡ Essential Tools Hub";
-        const STORAGE_KEY = "etCurrentTool"; // FIX 4: persistence key
+        var TOOL_ORDER = ["water", "password", "days", "links"];
+        var BASE_TITLE = "⚡ Essential Tools Hub";
+        var STORAGE_KEY = "etCurrentTool";
 
-        let current = null;
-        const loaded = {};
+        var current = null;
+        var loaded = {};
 
         /* ─────────────────────────────────────────
            WELCOME SCREEN
@@ -838,8 +868,9 @@
 
             TOOL_ORDER.forEach(function (k) {
                 var cfg = TOOLS[k];
-                document.getElementById(cfg.tab).classList.remove("active");
-                document.getElementById(cfg.tab).setAttribute("aria-selected", "false");
+                var tab = document.getElementById(cfg.tab);
+                tab.classList.remove("active");
+                tab.setAttribute("aria-selected", "false");
                 document.getElementById(cfg.frame).classList.remove("active");
             });
 
@@ -851,7 +882,6 @@
             document.title = BASE_TITLE;
             current = null;
 
-            // FIX 4: clear persisted tool state when user returns to welcome
             try { localStorage.removeItem(STORAGE_KEY); } catch (_) { }
         }
 
@@ -862,14 +892,15 @@
             if (!TOOLS[key]) return;
             var cfg = TOOLS[key];
 
-            // Fade out welcome screen
+            // Hide welcome screen
             document.getElementById("welcome").classList.add("hidden");
 
             // Deactivate all tabs & frames
             TOOL_ORDER.forEach(function (k) {
                 var c = TOOLS[k];
-                document.getElementById(c.tab).classList.remove("active");
-                document.getElementById(c.tab).setAttribute("aria-selected", "false");
+                var tab = document.getElementById(c.tab);
+                tab.classList.remove("active");
+                tab.setAttribute("aria-selected", "false");
                 document.getElementById(c.frame).classList.remove("active");
             });
 
@@ -877,9 +908,10 @@
                 t.classList.remove("active");
             });
 
-            // Activate chosen tab
-            document.getElementById(cfg.tab).classList.add("active");
-            document.getElementById(cfg.tab).setAttribute("aria-selected", "true");
+            // Activate chosen desktop tab
+            var activeTab = document.getElementById(cfg.tab);
+            activeTab.classList.add("active");
+            activeTab.setAttribute("aria-selected", "true");
 
             // Activate matching drawer tab
             var idx = TOOL_ORDER.indexOf(key);
@@ -890,9 +922,11 @@
             var frame = document.getElementById(cfg.frame);
             if (!loaded[key]) {
                 showLoader();
-                frame.src = cfg.src;
+                // Attach handlers BEFORE setting src to avoid a race where a
+                // cached iframe fires load before the handler is assigned.
                 frame.onload = hideLoader;
                 frame.onerror = hideLoader;
+                frame.src = cfg.src;
                 loaded[key] = true;
             }
 
@@ -900,7 +934,6 @@
             current = key;
             document.title = cfg.title + " — Essential Tools";
 
-            // FIX 4: persist the active tool so a page reload restores it
             try { localStorage.setItem(STORAGE_KEY, key); } catch (_) { }
         }
 
@@ -921,7 +954,7 @@
             bar.style.transition = "none";
             bar.style.width = "0%";
             bar.style.opacity = "1";
-            bar.offsetHeight; // force reflow
+            bar.offsetHeight;    // force reflow so transition resets correctly
             bar.style.transition = "width 0.3s ease, opacity 0.4s ease";
             requestAnimationFrame(function () {
                 bar.style.width = "70%";
@@ -933,9 +966,7 @@
             bar.style.width = "100%";
             loaderTimer = setTimeout(function () {
                 bar.style.opacity = "0";
-                setTimeout(function () {
-                    bar.style.width = "0%";
-                }, 400);
+                setTimeout(function () { bar.style.width = "0%"; }, 400);
             }, 300);
         }
 
@@ -977,7 +1008,7 @@
         document.addEventListener("keydown", function (e) {
             if (e.key === "Escape") { closeDrawer(); return; }
 
-            // Don't fire shortcuts while the user is typing
+            // Don't fire shortcuts while user is typing inside an input
             if (
                 e.target.tagName === "INPUT" ||
                 e.target.tagName === "TEXTAREA" ||
@@ -993,9 +1024,9 @@
         });
 
         /* ─────────────────────────────────────────
-           FIX 4 — RESTORE PERSISTED TOOL ON LOAD
-           Runs after DOM is ready (script is at
-           bottom of body so DOM is already parsed).
+           RESTORE PERSISTED TOOL ON RELOAD
+           Script is at end of <body> so DOM is
+           already parsed when this runs.
         ───────────────────────────────────────── */
         (function restoreLastTool() {
             try {
@@ -1004,7 +1035,7 @@
                     switchTool(saved);
                 }
             } catch (_) {
-                // localStorage unavailable (private mode, etc.) — silently ignore
+                // localStorage unavailable (private/sandboxed) — silently ignore
             }
         })();
     </script>
