@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0a0010">
     <meta name="description"
-        content="Essential Tools Hub — Water Tracker, Password Generator, Days Calculator, LinkVault">
+        content="Essential Tools Hub — Water Tracker, Password Generator, Days Calculator, LinkVault, Expenses Tracker">
     <!-- ── SECURITY: Content Security Policy ── -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src 'self'; img-src 'self' data:;">
@@ -30,6 +30,7 @@
             --accent2: #00d4ff;
             --accent3: #ff6b9d;
             --accent4: #00ffb3;
+            --accent5: #ffb347;
             --text: #f0eaff;
             --text2: #9b8fc0;
             --radius: 14px;
@@ -220,6 +221,11 @@
             touch-action: manipulation;
         }
 
+        .tab:focus-visible {
+            outline: 2px solid var(--tab-color, var(--accent1));
+            outline-offset: 2px;
+        }
+
         .tab::before {
             content: "";
             position: absolute;
@@ -303,6 +309,11 @@
             border-color: var(--accent1);
         }
 
+        #ham-btn:focus-visible {
+            outline: 2px solid var(--accent1);
+            outline-offset: 2px;
+        }
+
         /* ── MOBILE DRAWER ── */
         #drawer {
             position: fixed;
@@ -383,6 +394,11 @@
             background: rgba(162, 89, 255, 0.08);
         }
 
+        .drawer-tab:focus-visible {
+            outline: 2px solid var(--tab-color, var(--accent1));
+            outline-offset: 2px;
+        }
+
         /* ── FRAME AREA ──
        position:fixed so that child iframes (position:absolute inset:0)
        have a proper containing block. */
@@ -401,12 +417,17 @@
             width: 100%;
             height: 100%;
             border: none;
-            display: none;
+            /* PERF: hidden instead of display:none preserves the iframe's
+         rendering context once loaded, avoiding costly re-paints on
+         every tab switch */
+            visibility: hidden;
+            pointer-events: none;
             background: #0a0a0f;
         }
 
         .tool-frame.active {
-            display: block;
+            visibility: visible;
+            pointer-events: auto;
         }
 
         /* ── WELCOME SCREEN ──
@@ -418,9 +439,7 @@
         #welcome {
             position: absolute;
             top: 0;
-            /* ← FIX: anchor to top of #frame-area  */
             bottom: 0;
-            /* ← FIX: anchor to bottom of #frame-area */
             left: 0;
             right: 0;
             display: flex;
@@ -508,7 +527,7 @@
             font-size: 1rem;
             color: var(--text2);
             text-align: center;
-            max-width: 420px;
+            max-width: 460px;
             line-height: 1.7;
         }
 
@@ -517,7 +536,7 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
             width: 100%;
-            max-width: 860px;
+            max-width: 1080px;
         }
 
         .tool-card {
@@ -565,6 +584,11 @@
         /* Tap feedback for mobile */
         .tool-card:active {
             transform: translateY(-2px) scale(0.98);
+        }
+
+        .tool-card:focus-visible {
+            outline: 2px solid var(--card-color);
+            outline-offset: 3px;
         }
 
         .card-emoji {
@@ -668,71 +692,87 @@
 
 <body>
     <!-- LOADING BAR -->
-    <div id="loading-bar"></div>
+    <div id="loading-bar" role="progressbar" aria-hidden="true"></div>
 
     <!-- ══════════════ TOOLBAR ══════════════ -->
     <nav id="toolbar" role="navigation" aria-label="Essential Tools Navigation">
         <!-- Logo -->
-        <a class="logo" href="#" onclick="showWelcome(event)">
-            <div class="logo-icon">⚡</div>
+        <a class="logo" href="#" onclick="showWelcome(event)" aria-label="Essential Tools Hub — Home">
+            <div class="logo-icon" aria-hidden="true">⚡</div>
             <span class="logo-text">Essential<span>Tools</span></span>
         </a>
 
-        <div class="sep"></div>
+        <div class="sep" role="separator"></div>
 
         <!-- Desktop Nav Tabs -->
-        <div class="nav" role="tablist">
+        <div class="nav" role="tablist" aria-label="Tool selection">
             <button class="tab" id="tab-water" role="tab" aria-selected="false" style="--tab-color: #00d4ff"
                 onclick="switchTool('water')" aria-controls="frame-water">
-                <span class="tab-icon">💧</span>
+                <span class="tab-icon" aria-hidden="true">💧</span>
                 <span class="tab-label">Water Tracker</span>
-                <span class="tab-badge"></span>
+                <span class="tab-badge" aria-hidden="true"></span>
             </button>
 
             <button class="tab" id="tab-password" role="tab" aria-selected="false" style="--tab-color: #a259ff"
                 onclick="switchTool('password')" aria-controls="frame-password">
-                <span class="tab-icon">🔐</span>
+                <span class="tab-icon" aria-hidden="true">🔐</span>
                 <span class="tab-label">Password Gen</span>
-                <span class="tab-badge"></span>
+                <span class="tab-badge" aria-hidden="true"></span>
             </button>
 
             <button class="tab" id="tab-days" role="tab" aria-selected="false" style="--tab-color: #00ffb3"
                 onclick="switchTool('days')" aria-controls="frame-days">
-                <span class="tab-icon">📅</span>
+                <span class="tab-icon" aria-hidden="true">📅</span>
                 <span class="tab-label">Days Calculator</span>
-                <span class="tab-badge"></span>
+                <span class="tab-badge" aria-hidden="true"></span>
             </button>
 
             <button class="tab" id="tab-links" role="tab" aria-selected="false" style="--tab-color: #ff6b9d"
                 onclick="switchTool('links')" aria-controls="frame-links">
-                <span class="tab-icon">🔗</span>
+                <span class="tab-icon" aria-hidden="true">🔗</span>
                 <span class="tab-label">LinkVault</span>
-                <span class="tab-badge"></span>
+                <span class="tab-badge" aria-hidden="true"></span>
+            </button>
+
+            <button class="tab" id="tab-expenses" role="tab" aria-selected="false" style="--tab-color: #ffb347"
+                onclick="switchTool('expenses')" aria-controls="frame-expenses">
+                <span class="tab-icon" aria-hidden="true">💸</span>
+                <span class="tab-label">Expenses</span>
+                <span class="tab-badge" aria-hidden="true"></span>
             </button>
         </div>
 
         <!-- Mobile hamburger -->
-        <button id="ham-btn" aria-label="Toggle menu" aria-expanded="false" onclick="toggleDrawer()">
+        <button id="ham-btn" aria-label="Toggle menu" aria-expanded="false" aria-controls="drawer"
+            onclick="toggleDrawer()">
             ☰
         </button>
     </nav>
 
     <!-- ══════════════ MOBILE DRAWER OVERLAY ══════════════ -->
-    <div id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div id="drawer-overlay" onclick="closeDrawer()" aria-hidden="true"></div>
 
     <!-- ══════════════ MOBILE DRAWER ══════════════ -->
-    <div id="drawer" role="menu">
-        <button class="drawer-tab" style="--tab-color: #00d4ff" onclick="switchTool('water'); closeDrawer();">
-            <span style="font-size: 1.2rem">💧</span> Water Tracker
+    <div id="drawer" role="menu" aria-label="Tool selection menu">
+        <button class="drawer-tab" role="menuitem" style="--tab-color: #00d4ff"
+            onclick="switchTool('water'); closeDrawer();">
+            <span style="font-size: 1.2rem" aria-hidden="true">💧</span> Water Tracker
         </button>
-        <button class="drawer-tab" style="--tab-color: #a259ff" onclick="switchTool('password'); closeDrawer();">
-            <span style="font-size: 1.2rem">🔐</span> Password Generator
+        <button class="drawer-tab" role="menuitem" style="--tab-color: #a259ff"
+            onclick="switchTool('password'); closeDrawer();">
+            <span style="font-size: 1.2rem" aria-hidden="true">🔐</span> Password Generator
         </button>
-        <button class="drawer-tab" style="--tab-color: #00ffb3" onclick="switchTool('days'); closeDrawer();">
-            <span style="font-size: 1.2rem">📅</span> Days Calculator
+        <button class="drawer-tab" role="menuitem" style="--tab-color: #00ffb3"
+            onclick="switchTool('days'); closeDrawer();">
+            <span style="font-size: 1.2rem" aria-hidden="true">📅</span> Days Calculator
         </button>
-        <button class="drawer-tab" style="--tab-color: #ff6b9d" onclick="switchTool('links'); closeDrawer();">
-            <span style="font-size: 1.2rem">🔗</span> LinkVault
+        <button class="drawer-tab" role="menuitem" style="--tab-color: #ff6b9d"
+            onclick="switchTool('links'); closeDrawer();">
+            <span style="font-size: 1.2rem" aria-hidden="true">🔗</span> LinkVault
+        </button>
+        <button class="drawer-tab" role="menuitem" style="--tab-color: #ffb347"
+            onclick="switchTool('expenses'); closeDrawer();">
+            <span style="font-size: 1.2rem" aria-hidden="true">💸</span> Expenses Tracker
         </button>
     </div>
 
@@ -741,8 +781,6 @@
 
         <!-- Welcome Screen -->
         <div id="welcome" role="main">
-            <!-- Inner wrapper: margin:auto centres vertically when viewport
-           permits, scroll takes over when content overflows. -->
             <div class="welcome-inner">
                 <div class="subWelcome">
                     <div class="welcome-title">⚡ Essential Tools Hub</div>
@@ -758,8 +796,8 @@
               --card-grad: radial-gradient(ellipse at top, rgba(0, 212, 255, 0.08), transparent);
               --card-glow: rgba(0, 212, 255, 0.2);
             " onclick="switchToolFromCard('water')"
-                        onkeydown="if (event.key === 'Enter') switchToolFromCard('water');">
-                        <span class="card-emoji">💧</span>
+                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); switchToolFromCard('water'); }">
+                        <span class="card-emoji" aria-hidden="true">💧</span>
                         <span class="card-name">Water Tracker</span>
                         <span class="card-desc">Track daily hydration, pee count, set goals &amp; view history</span>
                     </div>
@@ -769,8 +807,8 @@
               --card-grad: radial-gradient(ellipse at top, rgba(162, 89, 255, 0.08), transparent);
               --card-glow: rgba(162, 89, 255, 0.2);
             " onclick="switchToolFromCard('password')"
-                        onkeydown="if (event.key === 'Enter') switchToolFromCard('password');">
-                        <span class="card-emoji">🔐</span>
+                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); switchToolFromCard('password'); }">
+                        <span class="card-emoji" aria-hidden="true">🔐</span>
                         <span class="card-name">Password Generator</span>
                         <span class="card-desc">Generate ultra-secure passwords with custom rules &amp; strength
                             meter</span>
@@ -780,8 +818,9 @@
               --card-color: #00ffb3;
               --card-grad: radial-gradient(ellipse at top, rgba(0, 255, 179, 0.08), transparent);
               --card-glow: rgba(0, 255, 179, 0.2);
-            " onclick="switchToolFromCard('days')" onkeydown="if (event.key === 'Enter') switchToolFromCard('days');">
-                        <span class="card-emoji">📅</span>
+            " onclick="switchToolFromCard('days')"
+                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); switchToolFromCard('days'); }">
+                        <span class="card-emoji" aria-hidden="true">📅</span>
                         <span class="card-name">Days Calculator</span>
                         <span class="card-desc">Age calculator, days between dates, add durations &amp; time math</span>
                     </div>
@@ -791,32 +830,40 @@
               --card-grad: radial-gradient(ellipse at top, rgba(255, 107, 157, 0.08), transparent);
               --card-glow: rgba(255, 107, 157, 0.2);
             " onclick="switchToolFromCard('links')"
-                        onkeydown="if (event.key === 'Enter') switchToolFromCard('links');">
-                        <span class="card-emoji">🔗</span>
+                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); switchToolFromCard('links'); }">
+                        <span class="card-emoji" aria-hidden="true">🔗</span>
                         <span class="card-name">LinkVault</span>
                         <span class="card-desc">Save, organise, search &amp; export all your important links</span>
                     </div>
 
+                    <div class="tool-card" role="button" tabindex="0" style="
+              --card-color: #ffb347;
+              --card-grad: radial-gradient(ellipse at top, rgba(255, 179, 71, 0.08), transparent);
+              --card-glow: rgba(255, 179, 71, 0.2);
+            " onclick="switchToolFromCard('expenses')"
+                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); switchToolFromCard('expenses'); }">
+                        <span class="card-emoji" aria-hidden="true">💸</span>
+                        <span class="card-name">Expenses Tracker</span>
+                        <span class="card-desc">Log day-to-day spending, set budgets &amp; analyse your finances</span>
+                    </div>
                 </div>
             </div><!-- /.welcome-inner -->
         </div><!-- /#welcome -->
 
-
         <iframe id="frame-water" class="tool-frame" title="Daily Water Intake Tracker" role="tabpanel"
-            aria-labelledby="tab-water" referrerpolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            aria-labelledby="tab-water" referrerpolicy="no-referrer"></iframe>
 
         <iframe id="frame-password" class="tool-frame" title="Advanced Password Generator" role="tabpanel"
-            aria-labelledby="tab-password" referrerpolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            aria-labelledby="tab-password" referrerpolicy="no-referrer"></iframe>
 
         <iframe id="frame-days" class="tool-frame" title="Total Days Calculator" role="tabpanel"
-            aria-labelledby="tab-days" referrerpolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            aria-labelledby="tab-days" referrerpolicy="no-referrer"></iframe>
 
         <iframe id="frame-links" class="tool-frame" title="LinkVault" role="tabpanel" aria-labelledby="tab-links"
-            referrerpolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"></iframe>
+            referrerpolicy="no-referrer"></iframe>
+
+        <iframe id="frame-expenses" class="tool-frame" title="Day to Day Expenses Tracker" role="tabpanel"
+            aria-labelledby="tab-expenses" referrerpolicy="no-referrer"></iframe>
 
     </div><!-- /#frame-area -->
 
@@ -851,9 +898,15 @@
                 src: "LinkVault_Database.html",
                 title: "🔗 LinkVault",
             },
+            expenses: {
+                tab: "tab-expenses",
+                frame: "frame-expenses",
+                src: "Day to Day Expenses Tracker.html",
+                title: "💸 Expenses Tracker",
+            },
         };
 
-        var TOOL_ORDER = ["water", "password", "days", "links"];
+        var TOOL_ORDER = ["water", "password", "days", "links", "expenses"];
         var BASE_TITLE = "⚡ Essential Tools Hub";
         var STORAGE_KEY = "etCurrentTool";
 
@@ -871,7 +924,9 @@
                 var tab = document.getElementById(cfg.tab);
                 tab.classList.remove("active");
                 tab.setAttribute("aria-selected", "false");
-                document.getElementById(cfg.frame).classList.remove("active");
+                var frame = document.getElementById(cfg.frame);
+                frame.classList.remove("active");
+                frame.setAttribute("aria-hidden", "true");
             });
 
             document.querySelectorAll(".drawer-tab").forEach(function (t) {
@@ -901,7 +956,9 @@
                 var tab = document.getElementById(c.tab);
                 tab.classList.remove("active");
                 tab.setAttribute("aria-selected", "false");
-                document.getElementById(c.frame).classList.remove("active");
+                var frame = document.getElementById(c.frame);
+                frame.classList.remove("active");
+                frame.setAttribute("aria-hidden", "true");
             });
 
             document.querySelectorAll(".drawer-tab").forEach(function (t) {
@@ -931,6 +988,7 @@
             }
 
             frame.classList.add("active");
+            frame.setAttribute("aria-hidden", "false");
             current = key;
             document.title = cfg.title + " — Essential Tools";
 
@@ -1016,7 +1074,13 @@
             ) return;
             if (e.target.closest("iframe")) return;
 
-            var shortcuts = { "1": "water", "2": "password", "3": "days", "4": "links" };
+            var shortcuts = {
+                "1": "water",
+                "2": "password",
+                "3": "days",
+                "4": "links",
+                "5": "expenses",
+            };
             if (shortcuts[e.key] && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 switchTool(shortcuts[e.key]);
                 closeDrawer();
