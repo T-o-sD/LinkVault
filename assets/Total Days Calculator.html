@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Days Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0a0c0f;
+            --surface: #111318;
+            --surface-2: #181c23;
+            --surface-3: #1e2430;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-focus: rgba(74, 222, 128, 0.5);
+            --text: #f0f4f8;
+            --text-muted: #8a9bb0;
+            --accent: #4ade80;
+            --accent-dim: rgba(74, 222, 128, 0.12);
+            --accent-glow: rgba(74, 222, 128, 0.25);
+            --gold: #fbbf24;
+            --gold-dim: rgba(251, 191, 36, 0.12);
+            --error: #f87171;
+            --error-dim: rgba(248, 113, 113, 0.12);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 32px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1.5rem 1rem 3rem;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(74, 222, 128, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 30% at 80% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+        }
+
+        /* ── Header ─────────────────────────────────── */
+        .page-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            padding: 0 1rem;
+        }
+
+        .page-header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.6rem, 5vw, 2.5rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #4ade80 0%, #22d3ee 60%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-header p {
+            margin-top: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* ── Cards ───────────────────────────────────── */
+        .container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
+            transition: border-color var(--transition);
+        }
+
+        .container:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.75rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: var(--radius-sm);
+            display: grid;
+            place-items: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .icon-green {
+            background: var(--accent-dim);
+        }
+
+        .icon-gold {
+            background: var(--gold-dim);
+        }
+
+        .icon-blue {
+            background: rgba(99, 179, 237, 0.12);
+        }
+
+        .icon-purple {
+            background: rgba(167, 139, 250, 0.12);
+        }
+
+        .card-header h2 {
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--text);
+        }
+
+        /* ── Form Elements ───────────────────────────── */
+        .form-row {
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-row label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        input[type="date"],
+        input[type="time"],
+        input[type="number"] {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            padding: 0.6rem 0.9rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.7);
+            cursor: pointer;
+        }
+
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        input[type="number"]:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
+        }
+
+        input[type="date"] {
+            width: 100%;
+            max-width: 220px;
+        }
+
+        input[type="time"] {
+            width: 130px;
+        }
+
+        input[type="number"] {
+            width: 72px;
+            text-align: center;
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        /* ── Time toggle ─────────────────────────────── */
+        .time-input {
+            display: none;
+        }
+
+        .time-input.show {
+            display: inline-block;
+        }
+
+        /* ── Checkbox / Toggle ───────────────────────── */
+        .toggle-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            margin: 1rem 0 1.25rem;
+            padding: 1rem;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-item input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 19px;
+            border-radius: 5px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            background: var(--surface-3);
+            cursor: pointer;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .toggle-item input[type="checkbox"]:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .toggle-item input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 0px;
+            width: 5px;
+            height: 10px;
+            border: 2px solid #0a0c0f;
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg);
+        }
+
+        .toggle-item span {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        /* ── Duration Inputs ─────────────────────────── */
+        .duration-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 0.25rem 0;
+        }
+
+        .duration-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .duration-cell label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* ── Button ──────────────────────────────────── */
+        .btn-submit {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0);
+            transition: background var(--transition);
+        }
+
+        .btn-submit:hover::before {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #052e16;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #1c1006;
+        }
+
+        .btn-blue {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: #0c1a3b;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #c084fc, #a855f7);
+            color: #1a0a2e;
+        }
+
+        /* ── Result Box ──────────────────────────────── */
+        .result {
+            display: none;
+            margin-top: 1.25rem;
+            padding: 1.25rem;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 0.92rem;
+            line-height: 1.7;
+            animation: fadeSlide 0.3s ease;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .result-date {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .result-separator {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0.85rem 0;
+        }
+
+        .result-highlight {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.35rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fbbf24, #f97316, #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+            line-height: 1.4;
+        }
+
+        .result-sub {
+            margin-top: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .badge-years,
+        .badge-months,
+        .badge-days {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 99px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .badge-years {
+            background: rgba(167, 139, 250, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(167, 139, 250, 0.25);
+        }
+
+        .badge-months {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+        }
+
+        .badge-days {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.25);
+        }
+
+        .badges-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+        }
+
+        .error-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--error-dim);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--error);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            animation: fadeSlide 0.3s ease;
+        }
+
+        /* ── Fieldset/Legend (visual group) ──────────── */
+        .visual-group {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .visual-group-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        /* ── Responsive ──────────────────────────────── */
+        @media (max-width: 520px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0.4rem;
+            }
+
+            .form-row label {
+                text-align: left;
+                font-size: 0.82rem;
+            }
+
+            input[type="date"] {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            input[type="time"] {
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .container {
+                padding: 1.25rem 1rem;
+            }
+
+            .result-highlight {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .badges-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="page-header">
+        <h1>Total Days Calculator</h1>
+        <p>Date arithmetic — fast, accurate, and offline-ready</p>
+    </header>
+
+    <!-- ═══ CARD 1 — Age Calculator ═══════════════════════════════════ -->
+    <section class="container" aria-labelledby="ageCalcTitle">
+        <div class="card-header">
+            <div class="card-icon icon-green" aria-hidden="true">✨</div>
+            <h2 id="ageCalcTitle">Age Calculator</h2>
+        </div>
+
+        <form id="dateForm" novalidate>
+            <div class="form-row">
+                <label for="startDate">Start Date</label>
+                <div class="input-wrap">
+                    <input type="date" id="startDate" required aria-required="true">
+                    <input type="time" step="1" id="startTime" class="time-input" aria-label="Start time (optional)">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label for="endDate">End Date</label>
+                <div class="input-wrap">
+                    <input type="date" id="endDate" required aria-required="true">
+                    <input type="time" step="1" id="endTime" class="time-input" aria-label="End time (optional)">
+                </div>
+            </div>
+
+            <div class="toggle-group" role="group" aria-label="Calculation options">
+                <label class="toggle-item" id="endDateLabelWrapper">
+                    <input type="checkbox" id="includeEndDate">
+                    <span>Include end date in calculation</span>
+                </label>
+                <label class="toggle-item">
+                    <input type="checkbox" id="includeTime">
+                    <span>Include time in calculation</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-submit btn-green">Calculate Age</button>
+        </form>
+
+        <div id="result1" class="result" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ═══ CARD 2 — Days Between ══════════════════════════════════════ -->
+    <section class="container" aria-labelledby="betweenTitle">
+        <div class="card-header">
+            <div class="card-icon icon-gold" aria-hidden="true">⭐</div>
+            <h2 id="betweenTitle">Days Between Two Dates</h2>
+        </div>
+
+        <form id="betweenForm" novalidate>
+            <div class="form-row">
+                <label for="betweenStartDate">Start Date</label>
+                <input type="date" id="betweenStartDate" required aria-required="true">
+            </div>
+
+            <div class="form-row">
+                <label for="betweenEndDate">End Date</label>
+                <input type="date" id="betweenEndDate" required aria-required="true">
+            </div>
+
+            <button type="submit" class="btn-submit btn-gold" style="margin-top:1rem;">Calculate Days Between</button>
+        </form>
+
+        <div id="result2" class="result" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ═══ CARD 3 — Add Duration ══════════════════════════════════════ -->
+    <section class="container" aria-labelledby="addDurTitle">
+        <div class="card-header">
+            <div class="card-icon icon-blue" aria-hidden="true">🎉</div>
+            <h2 id="addDurTitle">Add Duration to Date</h2>
+        </div>
+
+        <form id="addDurationForm" novalidate>
+            <div class="form-row">
+                <label for="baseDateAdd">Base Date</label>
+                <div class="input-wrap">
+                    <input type="date" id="baseDateAdd" required aria-required="true">
+                    <input type="time" step="1" id="baseTimeAdd" class="time-input" aria-label="Base time (optional)">
+                </div>
+            </div>
+
+            <div class="visual-group">
+                <p class="visual-group-label">Add Duration</p>
+                <div class="duration-row">
+                    <div class="duration-cell">
+                        <input type="number" id="addYears" value="0" min="0" aria-label="Years to add">
+                        <label for="addYears">Year(s)</label>
+                    </div>
+                    <div class="duration-cell">
+                        <input type="number" id="addMonths" value="0" min="0" aria-label="Months to add">
+                        <label for="addMonths">Month(s)</label>
+                    </div>
+                    <div class="duration-cell">
+                        <input type="number" id="addDays" value="0" min="0" aria-label="Days to add">
+                        <label for="addDays">Day(s)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toggle-group" role="group" aria-label="Calculation options">
+                <label class="toggle-item" id="addEndDateLabelWrapper">
+                    <input type="checkbox" id="includeEndDateAdd">
+                    <span>Include end date in calculation</span>
+                </label>
+                <label class="toggle-item">
+                    <input type="checkbox" id="includeTimeAdd">
+                    <span>Include time in calculation</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-submit btn-blue">Calculate Target Date</button>
+        </form>
+
+        <div id="result3" class="result" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ═══ CARD 4 — Add Time Duration ════════════════════════════════ -->
+    <section class="container" aria-labelledby="addTimeTitle">
+        <div class="card-header">
+            <div class="card-icon icon-purple" aria-hidden="true">⏱</div>
+            <h2 id="addTimeTitle">Add Time Duration to Date</h2>
+        </div>
+
+        <form id="addTimeForm" novalidate>
+            <div class="form-row">
+                <label for="baseDatetime">Base Date</label>
+                <input type="date" id="baseDatetime" required aria-required="true">
+            </div>
+            <div class="form-row">
+                <label for="baseTimetime">Base Time</label>
+                <input type="time" step="1" id="baseTimetime" required aria-required="true">
+            </div>
+
+            <div class="visual-group">
+                <p class="visual-group-label">Add Time Duration</p>
+                <div class="duration-row">
+                    <div class="duration-cell">
+                        <input type="number" id="addHours" value="0" min="0" aria-label="Hours to add">
+                        <label for="addHours">Hour(s)</label>
+                    </div>
+                    <div class="duration-cell">
+                        <input type="number" id="addMinutes" value="0" min="0" max="59" aria-label="Minutes to add">
+                        <label for="addMinutes">Minute(s)</label>
+                    </div>
+                    <div class="duration-cell">
+                        <input type="number" id="addSeconds" value="0" min="0" max="59" aria-label="Seconds to add">
+                        <label for="addSeconds">Second(s)</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit btn-purple">Calculate Target Date & Time</button>
+        </form>
+
+        <div id="result4" class="result" role="status" aria-live="polite"></div>
+    </section>
+
+
+    <script>
+        /* ─── Utilities ──────────────────────────────────────────────── */
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-GB', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            });
+        }
+
+        function formatDateTime(date) {
+            return date.toLocaleDateString('en-GB', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            }) + ', ' + date.toLocaleTimeString('en-US', {
+                hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
+            });
+        }
+
+        function getTimeDifference(start, end) {
+            const diff = Math.abs(end - start);
+            const days = Math.floor(diff / 86400000);
+            const hours = Math.floor((diff % 86400000) / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            return { days, hours, minutes, seconds };
+        }
+
+        function buildDurationString({ days, hours, minutes, seconds }) {
+            const parts = [];
+            if (days) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+            if (hours) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+            if (minutes) parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+            if (seconds) parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
+            if (!parts.length) return '0 seconds';
+            return parts.join(', ').replace(/,([^,]*)$/, ' and$1');
+        }
+
+        /* Accurate years/months/days breakdown */
+        function calculateYearsMonthsDays(startDate, endDate) {
+            let years = endDate.getFullYear() - startDate.getFullYear();
+            let months = endDate.getMonth() - startDate.getMonth();
+            let days = endDate.getDate() - startDate.getDate();
+
+            if (days < 0) {
+                months--;
+                const lastDay = new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate();
+                days += lastDay;
+            }
+            if (months < 0) { years--; months += 12; }
+
+            return { years, months, days };
+        }
+
+        function pluralise(n, word) {
+            return `${n} ${word}${n !== 1 ? 's' : ''}`;
+        }
+
+        function formatYMD({ years, months, days }) {
+            const parts = [];
+            if (years) parts.push(pluralise(years, 'year'));
+            if (months) parts.push(pluralise(months, 'month'));
+            if (days) parts.push(pluralise(days, 'day'));
+            if (!parts.length) return '0 days';
+            return parts.join(', ').replace(/,([^,]*)$/, ' and$1');
+        }
+
+        function buildBadges({ years, months, days }) {
+            let html = '<div class="badges-row">';
+            if (years || years === 0) html += `<span class="badge-years">${years} yr${years !== 1 ? 's' : ''}</span>`;
+            if (months || months === 0) html += `<span class="badge-months">${months} mo</span>`;
+            if (days || days === 0) html += `<span class="badge-days">${days} day${days !== 1 ? 's' : ''}</span>`;
+            html += '</div>';
+            return html;
+        }
+
+        function addDurationToDate(baseDate, years, months, days) {
+            const r = new Date(baseDate);
+            r.setFullYear(r.getFullYear() + years);
+            r.setMonth(r.getMonth() + months);
+            r.setDate(r.getDate() + days);
+            return r;
+        }
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.innerHTML = `<div class="error-box">⚠ ${msg}</div>`;
+            el.classList.add('show');
+            el.style.display = 'block';
+        }
+
+        function showResult(id, html) {
+            const el = document.getElementById(id);
+            el.innerHTML = html;
+            el.classList.add('show');
+            el.style.display = 'block';
+        }
+
+        /* ─── Init ───────────────────────────────────────────────────── */
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            ['startTime', 'endTime', 'baseTimeAdd', 'baseTimetime'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = currentTime;
+            });
+        });
+
+        /* ─── Toggle: time inputs ────────────────────────────────────── */
+
+        document.getElementById('includeTime').addEventListener('change', function () {
+            document.querySelectorAll('#dateForm .time-input').forEach(el => el.classList.toggle('show', this.checked));
+            document.getElementById('endDateLabelWrapper').style.display = this.checked ? 'none' : '';
+        });
+
+        document.getElementById('includeTimeAdd').addEventListener('change', function () {
+            document.getElementById('baseTimeAdd').classList.toggle('show', this.checked);
+            document.getElementById('addEndDateLabelWrapper').style.display = this.checked ? 'none' : '';
+        });
+
+        /* ─── Form 1 — Age Calculator ────────────────────────────────── */
+
+        document.getElementById('dateForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const sv = document.getElementById('startDate').value;
+            const ev = document.getElementById('endDate').value;
+
+            if (!sv || !ev) return showError('result1', 'Please fill in both dates.');
+
+            const includeEnd = document.getElementById('includeEndDate').checked;
+            const includeTime = document.getElementById('includeTime').checked;
+
+            if (includeTime) {
+                const start = new Date(`${sv}T${document.getElementById('startTime').value}`);
+                const end = new Date(`${ev}T${document.getElementById('endTime').value}`);
+                if (end < start) return showError('result1', 'End date/time must be after start date/time.');
+
+                const diff = getTimeDifference(start, end);
+                const totalDays = diff.days;
+                const ymd = calculateYearsMonthsDays(start, end);
+
+                showResult('result1', `
+                    <div class="result-label">From</div>
+                    <div class="result-date">${formatDateTime(start)}</div>
+                    <div class="result-label" style="margin-top:.6rem;">To</div>
+                    <div class="result-date">${formatDateTime(end)}</div>
+                    <hr class="result-separator">
+                    <span class="result-highlight">${buildDurationString(diff)}</span>
+                    <div class="result-sub" style="margin-top:.75rem;">Also expressed as:</div>
+                    ${buildBadges(ymd)}
+                    <div class="result-sub" style="margin-top:.4rem;">${formatYMD(ymd)}</div>
+                `);
+            } else {
+                const start = new Date(sv);
+                const end = new Date(ev);
+                if (end < start) return showError('result1', 'End date must be after start date.');
+
+                const rawDays = Math.floor((end - start) / 86400000);
+                const totalDays = includeEnd ? rawDays + 1 : rawDays;
+
+                /* YMD: shift end forward by 1 when inclusive */
+                const calcEnd = new Date(end);
+                if (includeEnd) calcEnd.setDate(calcEnd.getDate() + 1);
+                const ymd = calculateYearsMonthsDays(start, calcEnd);
+
+                const fromText = 'From and including';
+                const toText = includeEnd ? 'To and including' : 'To, but not including';
+
+                showResult('result1', `
+                    <div class="result-label">${fromText}</div>
+                    <div class="result-date">${formatDate(start)}</div>
+                    <div class="result-label" style="margin-top:.6rem;">${toText}</div>
+                    <div class="result-date">${formatDate(end)}</div>
+                    <hr class="result-separator">
+                    <span class="result-highlight">${totalDays} day${totalDays !== 1 ? 's' : ''}</span>
+                    <div class="result-sub" style="margin-top:.75rem;">Also expressed as:</div>
+                    ${buildBadges(ymd)}
+                    <div class="result-sub" style="margin-top:.4rem;">${formatYMD(ymd)}</div>
+                `);
+            }
+        });
+
+        /* ─── Form 2 — Days Between ──────────────────────────────────── */
+
+        document.getElementById('betweenForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const sv = document.getElementById('betweenStartDate').value;
+            const ev = document.getElementById('betweenEndDate').value;
+            if (!sv || !ev) return showError('result2', 'Please fill in both dates.');
+
+            const start = new Date(sv);
+            const end = new Date(ev);
+
+            if (end < start) return showError('result2', 'End date must be after start date.');
+
+            if (start.getTime() === end.getTime()) {
+                return showResult('result2', `
+                    <div class="result-label">Start Date</div>
+                    <div class="result-date">${formatDate(start)}</div>
+                    <hr class="result-separator">
+                    <span class="result-highlight">0 days</span>
+                    <div class="result-sub">Start and end dates are the same — 0 days between them.</div>
+                `);
+            }
+
+            /* Between = excluding both start and end */
+            const daysBetween = Math.floor((end - start) / 86400000) - 1;
+
+            /* YMD: from day-after-start to end (exclusive boundary) */
+            const calcStart = new Date(start);
+            calcStart.setDate(calcStart.getDate() + 1);
+            const ymd = calculateYearsMonthsDays(calcStart, end);
+
+            showResult('result2', `
+                <div class="result-label">Between</div>
+                <div class="result-date">${formatDate(start)}</div>
+                <div class="result-label" style="margin-top:.6rem;">And</div>
+                <div class="result-date">${formatDate(end)}</div>
+                <hr class="result-separator">
+                <span class="result-highlight">${daysBetween} day${daysBetween !== 1 ? 's' : ''}</span>
+                <div class="result-sub" style="margin-top:.5rem;">Not including start or end date.</div>
+                <div class="result-sub" style="margin-top:.75rem;">Also expressed as:</div>
+                ${buildBadges(ymd)}
+                <div class="result-sub" style="margin-top:.4rem;">${formatYMD(ymd)}</div>
+            `);
+        });
+
+        /* ─── Form 3 — Add Duration ──────────────────────────────────── */
+
+        document.getElementById('addDurationForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const bv = document.getElementById('baseDateAdd').value;
+            if (!bv) return showError('result3', 'Please enter a base date.');
+
+            const years = parseInt(document.getElementById('addYears').value) || 0;
+            const months = parseInt(document.getElementById('addMonths').value) || 0;
+            const days = parseInt(document.getElementById('addDays').value) || 0;
+
+            if (years === 0 && months === 0 && days === 0)
+                return showError('result3', 'Please enter at least one duration value.');
+
+            const includeEnd = document.getElementById('includeEndDateAdd').checked;
+            const includeTime = document.getElementById('includeTimeAdd').checked;
+
+            const durParts = [];
+            if (years) durParts.push(pluralise(years, 'year'));
+            if (months) durParts.push(pluralise(months, 'month'));
+            if (days) durParts.push(pluralise(days, 'day'));
+            const durStr = durParts.join(', ').replace(/,([^,]*)$/, ' and$1');
+
+            if (includeTime) {
+                const base = new Date(`${bv}T${document.getElementById('baseTimeAdd').value}`);
+                let target = addDurationToDate(base, years, months, days);
+
+                showResult('result3', `
+                    <div class="result-label">Base Date & Time</div>
+                    <div class="result-date">${formatDateTime(base)}</div>
+                    <div class="result-label" style="margin-top:.6rem;">Added</div>
+                    <div class="result-date">${durStr}</div>
+                    <hr class="result-separator">
+                    <span class="result-highlight">${formatDateTime(target)}</span>
+                `);
+            } else {
+                const base = new Date(bv);
+                let target = addDurationToDate(base, years, months, days);
+                if (includeEnd) target.setDate(target.getDate() - 1);
+
+                const toText = includeEnd ? 'To and including' : 'To, but not including';
+
+                showResult('result3', `
+                    <div class="result-label">From and including</div>
+                    <div class="result-date">${formatDate(base)}</div>
+                    <div class="result-label" style="margin-top:.6rem;">Added</div>
+                    <div class="result-date">${durStr}</div>
+                    <div class="result-label" style="margin-top:.6rem;">${toText}</div>
+                    <div class="result-date">${formatDate(target)}</div>
+                    <hr class="result-separator">
+                    <span class="result-highlight">${formatDate(target)}</span>
+                `);
+            }
+        });
+
+        /* ─── Form 4 — Add Time Duration ─────────────────────────────── */
+
+        document.getElementById('addTimeForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const bv = document.getElementById('baseDatetime').value;
+            const tv = document.getElementById('baseTimetime').value;
+            if (!bv || !tv) return showError('result4', 'Please enter a base date and time.');
+
+            const hours = parseInt(document.getElementById('addHours').value) || 0;
+            const minutes = parseInt(document.getElementById('addMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('addSeconds').value) || 0;
+
+            if (hours === 0 && minutes === 0 && seconds === 0)
+                return showError('result4', 'Please enter at least one time duration value.');
+
+            const base = new Date(`${bv}T${tv}`);
+            const target = new Date(base);
+            target.setHours(target.getHours() + hours);
+            target.setMinutes(target.getMinutes() + minutes);
+            target.setSeconds(target.getSeconds() + seconds);
+
+            const durParts = [];
+            if (hours) durParts.push(pluralise(hours, 'hour'));
+            if (minutes) durParts.push(pluralise(minutes, 'minute'));
+            if (seconds) durParts.push(pluralise(seconds, 'second'));
+            const durStr = durParts.join(', ').replace(/,([^,]*)$/, ' and$1');
+
+            showResult('result4', `
+                <div class="result-label">Base Date & Time</div>
+                <div class="result-date">${formatDateTime(base)}</div>
+                <div class="result-label" style="margin-top:.6rem;">Added</div>
+                <div class="result-date">${durStr}</div>
+                <hr class="result-separator">
+                <span class="result-highlight">${formatDateTime(target)}</span>
+                <div class="result-sub" style="margin-top:.5rem;">Target date and time after adding the specified duration.</div>
+            `);
+        });
+    </script>
+
+</body>
+
+</html>
