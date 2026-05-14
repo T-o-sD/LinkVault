@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Convert numbers to words in the Indian numbering system — Lakh, Crore, Arab, Kharab, Nil, Padma."
+    />
+    <title>Numbers To Words — Indian Numbering System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Reset & Base ─────────────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0d0f14;
+        --surface: #161b25;
+        --surface2: #1e2535;
+        --border: #2a3249;
+        --accent: #6c8ef5;
+        --accent-glow: rgba(108, 142, 245, 0.18);
+        --accent-hover: #8aaaf8;
+        --text: #e2e8f8;
+        --text-muted: #8a96b3;
+        --text-dim: #5a6480;
+        --error: #ff5f6d;
+        --error-bg: rgba(255, 95, 109, 0.1);
+        --warn: #f7c948;
+        --warn-bg: rgba(247, 201, 72, 0.1);
+        --success: #4ade80;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+        --transition: 0.22s ease;
+      }
+
+      html {
+        font-size: 16px;
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        background-image:
+          radial-gradient(
+            ellipse 80% 50% at 50% -10%,
+            rgba(108, 142, 245, 0.12) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 60% 40% at 80% 110%,
+            rgba(108, 142, 245, 0.07) 0%,
+            transparent 60%
+          );
+      }
+
+      /* ── Card ─────────────────────────────────────────────────────────────── */
+      .cALs {
+        width: 100%;
+        max-width: 680px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        animation: fadeUp 0.45s ease both;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(22px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── Card Header ──────────────────────────────────────────────────────── */
+      .SIP-CalH {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 16px 28px;
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .SIP-CalH::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--accent);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--accent);
+        flex-shrink: 0;
+      }
+
+      /* ── Card Body ────────────────────────────────────────────────────────── */
+      .cal-input {
+        padding: 32px 28px 36px;
+      }
+
+      .center {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+
+      .head_T {
+        font-size: 1.85rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        background: linear-gradient(
+          135deg,
+          #c9d6ff 0%,
+          var(--accent) 55%,
+          #a78bfa 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+      }
+
+      /* ── Label ────────────────────────────────────────────────────────────── */
+      .cal_inputName {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .for-123 {
+        font-style: normal;
+        font-size: 1.1rem;
+        color: var(--accent);
+        line-height: 1;
+      }
+
+      /* ── Input ────────────────────────────────────────────────────────────── */
+      #inputNumber {
+        display: block;
+        width: 100%;
+        padding: 14px 18px;
+        font-family: inherit;
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: var(--text);
+        background: var(--bg);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        outline: none;
+        transition:
+          border-color var(--transition),
+          box-shadow var(--transition);
+        letter-spacing: 0.04em;
+      }
+
+      #inputNumber::placeholder {
+        color: var(--text-dim);
+        letter-spacing: 0.15em;
+      }
+
+      #inputNumber:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+      }
+
+      #inputNumber:hover:not(:focus) {
+        border-color: #3a4565;
+      }
+
+      /* ── Error / Warn messages ────────────────────────────────────────────── */
+      .sip-error-msg {
+        display: block;
+        min-height: 20px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        margin-top: 8px;
+        padding: 0 4px;
+        border-radius: 4px;
+        transition: opacity var(--transition);
+        line-height: 1.4;
+      }
+
+      .sip-error-msg.is-error {
+        color: var(--error);
+        background: var(--error-bg);
+        padding: 7px 12px;
+      }
+
+      .sip-error-msg.is-warn {
+        color: var(--warn);
+        background: var(--warn-bg);
+        padding: 7px 12px;
+      }
+
+      /* ── Results ──────────────────────────────────────────────────────────── */
+      .BOLD {
+        margin-top: 24px;
+        padding: 20px 22px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--text);
+        line-height: 1.75;
+        word-break: break-word;
+        min-height: 0;
+        transition: opacity var(--transition);
+      }
+
+      .BOLD:empty {
+        display: none;
+      }
+
+      /* Each representation row */
+      .rep-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border);
+        animation: rowIn 0.25s ease both;
+      }
+
+      .rep-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .rep-row:first-child {
+        padding-top: 0;
+      }
+
+      @keyframes rowIn {
+        from {
+          opacity: 0;
+          transform: translateX(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .rep-badge {
+        flex-shrink: 0;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: var(--accent);
+        background: var(--accent-glow);
+        border: 1px solid rgba(108, 142, 245, 0.3);
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin-top: 2px;
+        text-transform: uppercase;
+      }
+
+      .rep-text {
+        color: var(--text);
+        font-size: 0.97rem;
+        line-height: 1.6;
+      }
+
+      /* ── Footer ───────────────────────────────────────────────────────────── */
+      .ntw-footer {
+        padding: 14px 28px;
+        background: var(--surface2);
+        border-top: 1px solid var(--border);
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        text-align: center;
+        letter-spacing: 0.01em;
+      }
+
+      /* ── Responsive ───────────────────────────────────────────────────────── */
+      @media (max-width: 480px) {
+        .cal-input {
+          padding: 24px 18px 28px;
+        }
+        .SIP-CalH {
+          padding: 14px 18px;
+        }
+        .ntw-footer {
+          padding: 12px 18px;
+        }
+        .head_T {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="NumTOwords" class="cALs">
+      <h2 class="SIP-CalH">Numbers To Words</h2>
+
+      <div class="cal-input">
+        <div class="center">
+          <h3 class="head_T">Convert Numbers to Words</h3>
+        </div>
+
+        <label for="inputNumber" class="cal_inputName">
+          <em class="for-123"><b>•</b></em> Enter a number:
+        </label>
+        <input
+          type="text"
+          title="Enter a number"
+          id="inputNumber"
+          inputmode="numeric"
+          placeholder="₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹ ₹"
+          maxlength="16"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span
+          class="sip-error-msg"
+          id="err-inputNumber"
+          role="alert"
+          aria-live="assertive"
+        ></span>
+
+        <!-- aria-live="polite" → screen-readers announce result changes (accessibility) -->
+        <p id="numberInWords" class="BOLD" aria-live="polite"></p>
+      </div>
+
+      <footer class="ntw-footer">
+        Supports Indian numbering up to <strong>16 digits</strong> — Lakh ·
+        Crore · Arab · Kharab · Nil · Padma
+      </footer>
+    </div>
+
+    <script>
+      /* ─── Utility helpers (inline, self-contained) ──────────────────────────── */
+
+      function sipClearErrors(ids) {
+        ids.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.textContent = "";
+          el.className = "sip-error-msg";
+        });
+      }
+
+      function sipShowError(id, msg) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = "sip-error-msg is-error";
+      }
+
+      function sipShowWarn(id, msg) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = "sip-error-msg is-warn";
+      }
+
+      /* ─── Word arrays  (every word Capitalised) ─────────────────────────────── */
+      var a = [
+        "",
+        "One ",
+        "Two ",
+        "Three ",
+        "Four ",
+        "Five ",
+        "Six ",
+        "Seven ",
+        "Eight ",
+        "Nine ",
+        "Ten ",
+        "Eleven ",
+        "Twelve ",
+        "Thirteen ",
+        "Fourteen ",
+        "Fifteen ",
+        "Sixteen ",
+        "Seventeen ",
+        "Eighteen ",
+        "Nineteen ",
+      ];
+      var b = [
+        "",
+        "",
+        "Twenty",
+        "Thirty",
+        "Forty",
+        "Fifty",
+        "Sixty",
+        "Seventy",
+        "Eighty",
+        "Ninety",
+      ];
+
+      /* ─── Helpers ────────────────────────────────────────────────────────────── */
+
+      /**
+       * Two-digit integer (0–99) → capitalised word fragment (trailing space included).
+       */
+      function seg2(n) {
+        n = parseInt(n, 10);
+        if (n === 0) return "";
+        if (n < 20) return a[n];
+        var t = Math.floor(n / 10),
+          o = n % 10;
+        return b[t] + (o ? " " + a[o] : " ");
+      }
+
+      /**
+       * Integer 0–999,999,999 → Indian-grouped words, no unit suffix.
+       */
+      function wordsForCount(n) {
+        if (n === 0) return "";
+        var s = n
+          .toString()
+          .padStart(9, "0")
+          .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+        var cr = parseInt(s[1]),
+          lk = parseInt(s[2]),
+          th = parseInt(s[3]),
+          hu = parseInt(s[4]),
+          on = parseInt(s[5]);
+        var r = "";
+        if (cr) r += seg2(cr) + "Crore ";
+        if (lk) r += seg2(lk) + "Lakh ";
+        if (th) r += seg2(th) + "Thousand ";
+        if (hu) r += a[hu] + "Hundred ";
+        if (on) r += (r ? "And " : "") + seg2(on);
+        return r;
+      }
+
+      /* ─── Core conversion ────────────────────────────────────────────────────── */
+      function inWords(numStr) {
+        numStr = numStr.toString().replace(/^0+/, "") || "0";
+        if (numStr.length > 16) return ["Overflow"];
+        if (numStr === "0") return ["Zero Rupees Only."];
+
+        var PADMA = BigInt("1000000000000000"); // 10^15
+        var NIL = BigInt("10000000000000"); // 10^13
+        var KHARAB = BigInt("100000000000"); // 10^11
+        var ARAB = BigInt("1000000000"); // 10^9
+        var CRORE = BigInt("10000000"); // 10^7
+        var LAKH = BigInt("100000"); // 10^5
+        var THOUSAND = BigInt("1000");
+        var HUNDRED = BigInt("100");
+
+        var num = BigInt(numStr);
+
+        var padmaC = Number(num / PADMA);
+        var r0 = num % PADMA;
+        var nilC = Number(r0 / NIL);
+        r0 = r0 % NIL;
+        var kharabC = Number(r0 / KHARAB);
+        r0 = r0 % KHARAB;
+        var arabC = Number(r0 / ARAB);
+        r0 = r0 % ARAB;
+        var croreC = Number(r0 / CRORE);
+        r0 = r0 % CRORE;
+        var lakhC = Number(r0 / LAKH);
+        r0 = r0 % LAKH;
+        var thouC = Number(r0 / THOUSAND);
+        r0 = r0 % THOUSAND;
+        var hunC = Number(r0 / HUNDRED);
+        var onesC = Number(r0 % HUNDRED);
+
+        function buildV1() {
+          var s = "";
+          if (padmaC) s += a[padmaC] + "Padma ";
+          if (nilC) s += seg2(nilC) + "Nil ";
+          if (kharabC) s += seg2(kharabC) + "Kharab ";
+          if (arabC) s += seg2(arabC) + "Arab ";
+          if (croreC) s += seg2(croreC) + "Crore ";
+          if (lakhC) s += seg2(lakhC) + "Lakh ";
+          if (thouC) s += seg2(thouC) + "Thousand ";
+          if (hunC) s += a[hunC] + "Hundred ";
+          if (onesC) s += (s ? "And " : "") + seg2(onesC);
+          return s.trim() + " Rupees Only.";
+        }
+
+        function buildV2() {
+          var nilTotal = Number(num / NIL);
+          var r = num % NIL;
+          var kb = Number(r / KHARAB);
+          r = r % KHARAB;
+          var ar = Number(r / ARAB);
+          r = r % ARAB;
+          var cr = Number(r / CRORE);
+          r = r % CRORE;
+          var lk = Number(r / LAKH);
+          r = r % LAKH;
+          var th = Number(r / THOUSAND);
+          r = r % THOUSAND;
+          var hu = Number(r / HUNDRED);
+          var on = Number(r % HUNDRED);
+          var s = wordsForCount(nilTotal) + "Nil ";
+          if (kb) s += seg2(kb) + "Kharab ";
+          if (ar) s += seg2(ar) + "Arab ";
+          if (cr) s += seg2(cr) + "Crore ";
+          if (lk) s += seg2(lk) + "Lakh ";
+          if (th) s += seg2(th) + "Thousand ";
+          if (hu) s += a[hu] + "Hundred ";
+          if (on) s += "And " + seg2(on);
+          return s.trim() + " Rupees Only.";
+        }
+
+        function buildV3() {
+          var kharabTotal = Number(num / KHARAB);
+          var r = num % KHARAB;
+          var ar = Number(r / ARAB);
+          r = r % ARAB;
+          var cr = Number(r / CRORE);
+          r = r % CRORE;
+          var lk = Number(r / LAKH);
+          r = r % LAKH;
+          var th = Number(r / THOUSAND);
+          r = r % THOUSAND;
+          var hu = Number(r / HUNDRED);
+          var on = Number(r % HUNDRED);
+          var s = wordsForCount(kharabTotal) + "Kharab ";
+          if (ar) s += seg2(ar) + "Arab ";
+          if (cr) s += seg2(cr) + "Crore ";
+          if (lk) s += seg2(lk) + "Lakh ";
+          if (th) s += seg2(th) + "Thousand ";
+          if (hu) s += a[hu] + "Hundred ";
+          if (on) s += "And " + seg2(on);
+          return s.trim() + " Rupees Only.";
+        }
+
+        function buildV4() {
+          var arabTotal = Number(num / ARAB);
+          var r = num % ARAB;
+          var cr = Number(r / CRORE);
+          r = r % CRORE;
+          var lk = Number(r / LAKH);
+          r = r % LAKH;
+          var th = Number(r / THOUSAND);
+          r = r % THOUSAND;
+          var hu = Number(r / HUNDRED);
+          var on = Number(r % HUNDRED);
+          var s = wordsForCount(arabTotal) + "Arab ";
+          if (cr) s += seg2(cr) + "Crore ";
+          if (lk) s += seg2(lk) + "Lakh ";
+          if (th) s += seg2(th) + "Thousand ";
+          if (hu) s += a[hu] + "Hundred ";
+          if (on) s += "And " + seg2(on);
+          return s.trim() + " Rupees Only.";
+        }
+
+        function buildV5() {
+          var croreTotal = Number(num / CRORE);
+          var r = num % CRORE;
+          var lk = Number(r / LAKH);
+          r = r % LAKH;
+          var th = Number(r / THOUSAND);
+          r = r % THOUSAND;
+          var hu = Number(r / HUNDRED);
+          var on = Number(r % HUNDRED);
+          var s = wordsForCount(croreTotal) + "Crore ";
+          if (lk) s += seg2(lk) + "Lakh ";
+          if (th) s += seg2(th) + "Thousand ";
+          if (hu) s += a[hu] + "Hundred ";
+          if (on) s += "And " + seg2(on);
+          return s.trim() + " Rupees Only.";
+        }
+
+        var v1 = buildV1();
+        var reps = [v1];
+
+        if (num >= PADMA) {
+          var v2 = buildV2();
+          if (reps.indexOf(v2) === -1) reps.push(v2);
+        }
+        if (num >= NIL) {
+          var v3 = buildV3();
+          if (reps.indexOf(v3) === -1) reps.push(v3);
+        }
+        if (num >= KHARAB) {
+          var v4 = buildV4();
+          if (reps.indexOf(v4) === -1) reps.push(v4);
+        }
+        if (num >= ARAB) {
+          var v5 = buildV5();
+          if (reps.indexOf(v5) === -1) reps.push(v5);
+        }
+
+        return reps;
+      }
+
+      /* ─── Validator ──────────────────────────────────────────────────────────── */
+      function validateNTWInput() {
+        var raw = document.getElementById("inputNumber").value.trim();
+        var output = document.getElementById("numberInWords");
+        var valid = true;
+
+        sipClearErrors(["err-inputNumber"]);
+
+        if (raw === "") {
+          output.innerHTML = "";
+          return { valid: false, silent: true };
+        }
+
+        if (!/^\d+$/.test(raw)) {
+          sipShowError(
+            "err-inputNumber",
+            "Please enter a valid whole number (digits only, no decimals or symbols).",
+          );
+          output.innerHTML = "";
+          valid = false;
+        } else if (raw.length > 16) {
+          sipShowError(
+            "err-inputNumber",
+            "Number is too large — maximum 16 digits (up to 9,99,99,99,99,99,99,99,999).",
+          );
+          output.innerHTML = "";
+          valid = false;
+        } else if (parseInt(raw, 10) === 0 && raw !== "0") {
+          sipShowWarn(
+            "err-inputNumber",
+            "Leading zeros detected — result will show as Zero Rupees Only.",
+          );
+        }
+
+        return { valid: valid, silent: false, raw: raw };
+      }
+
+      /* ─── Unit labels for result badges ─────────────────────────────────────── */
+      var UNIT_LABELS = ["Full", "Nil", "Kharab", "Arab", "Crore"];
+
+      /* ─── Input handler ──────────────────────────────────────────────────────── */
+      document
+        .getElementById("inputNumber")
+        .addEventListener("input", function () {
+          // Reject non-digit characters immediately
+          this.value = this.value.replace(/\D/g, "");
+
+          // Hard cap at 16 characters
+          if (this.value.length > 16) {
+            this.value = this.value.slice(0, 16);
+          }
+
+          var v = validateNTWInput();
+          if (!v.valid) return;
+
+          var results = inWords(this.value);
+
+          if (!results || results[0] === "Overflow") {
+            sipShowError(
+              "err-inputNumber",
+              "Number is too large — maximum 16 digits (up to 9,99,99,99,99,99,99,99,999).",
+            );
+            document.getElementById("numberInWords").innerHTML = "";
+            return;
+          }
+
+          // Render each representation as a styled row
+          var html = results
+            .map(function (text, i) {
+              var label = UNIT_LABELS[i] || "V" + (i + 1);
+              return (
+                '<div class="rep-row">' +
+                '<span class="rep-badge">' +
+                label +
+                "</span>" +
+                '<span class="rep-text">' +
+                escapeHTML(text) +
+                "</span>" +
+                "</div>"
+              );
+            })
+            .join("");
+
+          document.getElementById("numberInWords").innerHTML = html;
+        });
+
+      /* ─── Security: HTML-escape helper ──────────────────────────────────────── */
+      function escapeHTML(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+    </script>
+  </body>
+</html>
